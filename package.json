@@ -1,0 +1,16 @@
+{
+  "name": "robot-dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "license": "Unlicense",
+  "devDependencies": {
+    "eslint": "^6.7.2",
+    "prettier": "^1.19.1",
+    "prettier-plugin-package": "^0.3.1"
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "all"
+  }
+}
