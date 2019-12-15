@@ -3,10 +3,34 @@
   "version": "1.0.0",
   "description": "",
   "license": "Unlicense",
+  "scripts": {
+    "check-lint": "eslint --format=pretty --ignore-path .gitignore --ext .js,.ts,.tsx . && prettier --list-different --ignore-path .gitignore \"**/*.{j,t}s{x,}{on,}\"",
+    "eslint": "eslint --format=pretty --ignore-path .gitignore --fix --ext .js,.ts,.tsx .",
+    "lint": "eslint --format=pretty --ignore-path .gitignore --fix --ext .js,.ts,.tsx . && prettier --write --ignore-path .gitignore \"**/*.{j,t}s{x,}{on,}\""
+  },
   "devDependencies": {
-    "eslint": "^6.7.2",
-    "prettier": "^1.19.1",
-    "prettier-plugin-package": "^0.3.1"
+    "eslint": "6.7.2",
+    "eslint-plugin-caleb": "7.1.1",
+    "prettier": "1.19.1",
+    "prettier-plugin-package": "0.3.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:caleb/recommended",
+      "plugin:caleb/preact",
+      "plugin:caleb/jest"
+    ],
+    "rules": {
+      "no-return-await": "off",
+      "caleb/react/display-name": "off",
+      "no-else-return": [
+        "error",
+        {
+          "allowElseIf": true
+        }
+      ],
+      "caleb/@typescript-eslint/ban-ts-ignore": "off"
+    }
   },
   "prettier": {
     "semi": false,
