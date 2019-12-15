@@ -1,35 +1,34 @@
 {
   "name": "robot-dashboard",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "",
   "license": "Unlicense",
   "scripts": {
     "check-lint": "eslint --format=pretty --ignore-path .gitignore --ext .js,.ts,.tsx . && prettier --list-different --ignore-path .gitignore \"**/*.{j,t}s{x,}{on,}\"",
     "eslint": "eslint --format=pretty --ignore-path .gitignore --fix --ext .js,.ts,.tsx .",
-    "lint": "eslint --format=pretty --ignore-path .gitignore --fix --ext .js,.ts,.tsx . && prettier --write --ignore-path .gitignore \"**/*.{j,t}s{x,}{on,}\""
+    "lint": "eslint --format=pretty --ignore-path .gitignore --fix --ext .js,.ts,.tsx . && prettier --write --ignore-path .gitignore \"**/*.{j,t}s{x,}{on,}\"",
+    "type": "tsc -b",
+    "type:watch": "tsc -b -w"
+  },
+  "dependencies": {
+    "carlo": "0.9.46"
   },
   "devDependencies": {
+    "@types/carlo": "0.9.1",
     "eslint": "6.7.2",
+    "eslint-formatter-pretty": "^3.0.1",
     "eslint-plugin-caleb": "7.1.1",
     "prettier": "1.19.1",
-    "prettier-plugin-package": "0.3.1"
+    "prettier-plugin-package": "0.3.1",
+    "typescript": "3.7.3"
   },
   "eslintConfig": {
     "extends": [
       "plugin:caleb/recommended",
-      "plugin:caleb/preact",
-      "plugin:caleb/jest"
+      "plugin:caleb/preact"
     ],
-    "rules": {
-      "no-return-await": "off",
-      "caleb/react/display-name": "off",
-      "no-else-return": [
-        "error",
-        {
-          "allowElseIf": true
-        }
-      ],
-      "caleb/@typescript-eslint/ban-ts-ignore": "off"
+    "parserOptions": {
+      "project": "*/tsconfig.json"
     }
   },
   "prettier": {
