@@ -1,6 +1,18 @@
 const distanceBetween = (x1: number, y1: number, x2: number, y2: number) =>
   Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
+const degrees = Math.PI / 180
+
+const getAfterHandle = (point: Waypoint): Point => ({
+  x: point.handleAfterLength * Math.cos(point.heading * degrees) + point.x,
+  y: point.handleAfterLength * Math.sin(point.heading * degrees) + point.y,
+})
+
+const getBeforeHandle = (point: Waypoint): Point => ({
+  x: -point.handleBeforeLength * Math.cos(point.heading * degrees) + point.x,
+  y: -point.handleBeforeLength * Math.sin(point.heading * degrees) + point.y,
+})
+
 interface Point {
   /** x position in inches. 0 is the bottom left of the field */
   x: number
@@ -61,7 +73,6 @@ const main = () => {
   const inches = feet / 12
   const fieldHeight = 54 * feet
   const canvasHeight = fieldHeight
-  const degrees = Math.PI / 180
   const canvas = document.querySelector<HTMLCanvasElement>('.path-canvas')
   if (!canvas) return
   canvas.setAttribute('width', String(canvasWidth))
@@ -84,18 +95,64 @@ const main = () => {
       const dist = distanceBetween(clickX, clickY, p.x, p.y)
       return dist < 5
     })
-    focusedWaypoint = waypoint || null
-    renderWaypoints()
+
+    // They clicked a waypoint, so "focus" that one and render
+    if (waypoint) {
+      focusedWaypoint = waypoint
+      focusedControlPoint = null
+      render()
+      return
+    }
+    // They didn't click on a point, but check if they clicked on a handle for the focused point
+    if (focusedWaypoint) {
+      const beforeControl = getBeforeHandle(focusedWaypoint)
+      const afterControl = getAfterHandle(focusedWaypoint)
+      const distToBefore = distanceBetween(
+        clickX,
+        clickY,
+        beforeControl.x,
+        beforeControl.y,
+      )
+      const distToAfter = distanceBetween(
+        clickX,
+        clickY,
+        afterControl.x,
+        afterControl.y,
+      )
+
+      focusedControlPoint =
+        distToBefore < 5 ? 'before' : distToAfter < 5 ? 'after' : null
+      if (focusedControlPoint) return
+    }
+    focusedWaypoint = null
+    render()
   })
   canvas.addEventListener('mouseup', () => {
     isMouseDown = false
+    focusedControlPoint = null
   })
 
   canvas.addEventListener('mousemove', e => {
     if (!isMouseDown || !focusedWaypoint) return
     const rect = canvas.getBoundingClientRect()
-    focusedWaypoint.x = mouseXToFieldX(e.clientX - rect.left)
-    focusedWaypoint.y = mouseYToFieldY(e.clientY - rect.top)
+    const x = mouseXToFieldX(e.clientX - rect.left)
+    const y = mouseYToFieldY(e.clientY - rect.top)
+
+    if (focusedControlPoint) {
+      focusedWaypoint.heading =
+        Math.atan2(y - focusedWaypoint.y, x - focusedWaypoint.x) *
+          (180 / Math.PI) +
+        (focusedControlPoint === 'before' ? 180 : 0)
+
+      const dist = distanceBetween(x, y, focusedWaypoint.x, focusedWaypoint.y)
+
+      if (focusedControlPoint === 'before')
+        focusedWaypoint.handleBeforeLength = dist
+      else focusedWaypoint.handleAfterLength = dist
+    } else {
+      focusedWaypoint.x = x
+      focusedWaypoint.y = y
+    }
     render()
   })
 
@@ -109,30 +166,15 @@ const main = () => {
   if (!ctx) return
 
   let focusedWaypoint: Waypoint | null = null
+  let focusedControlPoint: 'before' | 'after' | null = null
 
   const renderPath = () => {
     ctx.beginPath()
     path.waypoints.forEach((startPoint, i) => {
       const endPoint = path.waypoints[i + 1]
       if (!endPoint) return
-      const control1 = {
-        x:
-          startPoint.handleAfterLength *
-            Math.cos(startPoint.heading * degrees) +
-          startPoint.x,
-        y:
-          startPoint.handleAfterLength *
-            Math.sin(startPoint.heading * degrees) +
-          startPoint.y,
-      }
-      const control2 = {
-        x:
-          -endPoint.handleBeforeLength * Math.cos(endPoint.heading * degrees) +
-          endPoint.x,
-        y:
-          -endPoint.handleBeforeLength * Math.sin(endPoint.heading * degrees) +
-          endPoint.y,
-      }
+      const control1 = getAfterHandle(startPoint)
+      const control2 = getBeforeHandle(endPoint)
       ctx.moveTo(convertX(startPoint.x), convertY(startPoint.y))
       ctx.bezierCurveTo(
         convertX(control1.x),
@@ -147,14 +189,45 @@ const main = () => {
     ctx.stroke()
   }
 
+  const drawCircle = (
+    color: string,
+    x: number,
+    y: number,
+    size = 4 * inches,
+  ) => {
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(x, y, size, 0, 2 * Math.PI)
+    ctx.fill()
+  }
+
   const renderWaypoints = () => {
     path.waypoints.forEach(point => {
-      ctx.fillStyle = point === focusedWaypoint ? 'green' : 'red'
-
-      ctx.beginPath()
-      ctx.arc(convertX(point.x), convertY(point.y), 4 * inches, 0, 2 * Math.PI)
-      ctx.fill()
+      drawCircle(
+        point === focusedWaypoint ? 'green' : 'red',
+        convertX(point.x),
+        convertY(point.y),
+      )
     })
+  }
+
+  const renderHandles = () => {
+    if (!focusedWaypoint) return
+    const beforeControl = getBeforeHandle(focusedWaypoint)
+    const afterControl = getAfterHandle(focusedWaypoint)
+
+    drawCircle(
+      'blue',
+      convertX(beforeControl.x),
+      convertY(beforeControl.y),
+      3 * inches,
+    )
+    drawCircle(
+      'blue',
+      convertX(afterControl.x),
+      convertY(afterControl.y),
+      3 * inches,
+    )
   }
 
   const clear = () => {
@@ -165,6 +238,7 @@ const main = () => {
     clear()
     renderPath()
     renderWaypoints()
+    renderHandles()
   }
 
   render()
