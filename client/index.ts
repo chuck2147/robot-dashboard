@@ -1,7 +1,8 @@
-const distanceBetween = (x1: number, y1: number, x2: number, y2: number) =>
+const distanceBetween = ({ x: x1, y: y1 }: Point, { x: x2, y: y2 }: Point) =>
   Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 const degrees = Math.PI / 180
+const bezierDivisions = 200
 
 const getAfterHandle = (point: Waypoint): Point => ({
   x: point.handleAfterLength * Math.cos(point.heading * degrees) + point.x,
@@ -12,6 +13,70 @@ const getBeforeHandle = (point: Waypoint): Point => ({
   x: -point.handleBeforeLength * Math.cos(point.heading * degrees) + point.x,
   y: -point.handleBeforeLength * Math.sin(point.heading * degrees) + point.y,
 })
+
+const cubicBezierAxis = (
+  t: number,
+  start: number,
+  end: number,
+  control1: number,
+  control2: number,
+) =>
+  (1 - t) ** 3 * start +
+  3 * (1 - t) ** 2 * t * control1 +
+  3 * (1 - t) * t ** 2 * control2 +
+  t ** 3 * end
+
+const cubicBezier = (
+  t: number,
+  start: Point,
+  end: Point,
+  control1: Point,
+  control2: Point,
+): Point => ({
+  x: cubicBezierAxis(t, start.x, end.x, control1.x, control2.x),
+  y: cubicBezierAxis(t, start.y, end.y, control1.y, control2.y),
+})
+
+// https://en.wikipedia.org/wiki/File:B%C3%A9zier_2_big.gif
+// https://math.stackexchange.com/a/478001
+const cubicBezierAxisAngle = (
+  t: number,
+  start: number,
+  end: number,
+  control1: number,
+  control2: number,
+): number =>
+  (1 - t) ** 2 * (control1 - start) +
+  2 * t * (1 - t) * (control2 - control1) +
+  t ** 2 * (end - control2)
+
+const cubicBezierAngle = (
+  t: number,
+  start: Point,
+  end: Point,
+  control1: Point,
+  control2: Point,
+): number => {
+  const dY = cubicBezierAxisAngle(t, start.y, end.y, control1.y, control2.y)
+  const dX = cubicBezierAxisAngle(t, start.x, end.x, control1.x, control2.x)
+  return Math.atan2(dY, dX)
+}
+
+const cubicBezierLength = (
+  start: Point,
+  end: Point,
+  control1: Point,
+  control2: Point,
+) => {
+  let lastPoint = start
+  let length = 0
+  for (let t = 0; t <= 1; t += 1 / bezierDivisions) {
+    const intermediatePoint = cubicBezier(t, start, end, control1, control2)
+    length += distanceBetween(lastPoint, intermediatePoint)
+    lastPoint = intermediatePoint
+  }
+  return length
+}
 
 interface Point {
   /** x position in inches. 0 is the bottom left of the field */
@@ -33,8 +98,15 @@ interface Waypoint extends Point {
   handleAfterLength: number
 }
 
+interface AngleLocation {
+  afterWaypoint: number
+  bezierT: number
+  angle: number
+}
+
 interface Path {
   waypoints: Waypoint[]
+  angles: AngleLocation[]
 }
 
 const path: Path = {
@@ -43,7 +115,7 @@ const path: Path = {
       x: 10,
       y: 10,
       heading: 60,
-      handleBeforeLength: 3,
+      handleBeforeLength: 5,
       handleAfterLength: 90,
     },
     {
@@ -58,7 +130,19 @@ const path: Path = {
       y: 190,
       heading: 70,
       handleBeforeLength: 15,
-      handleAfterLength: 1,
+      handleAfterLength: 5,
+    },
+  ],
+  angles: [
+    {
+      afterWaypoint: 0,
+      bezierT: 0,
+      angle: 90,
+    },
+    {
+      afterWaypoint: 1,
+      bezierT: 0.5,
+      angle: 45,
     },
   ],
 }
@@ -92,7 +176,7 @@ const main = () => {
     const clickX = mouseXToFieldX(e.clientX - rect.left)
     const clickY = mouseYToFieldY(e.clientY - rect.top)
     const waypoint = path.waypoints.find(p => {
-      const dist = distanceBetween(clickX, clickY, p.x, p.y)
+      const dist = distanceBetween({ x: clickX, y: clickY }, p)
       return dist < 5
     })
 
@@ -108,16 +192,12 @@ const main = () => {
       const beforeControl = getBeforeHandle(focusedWaypoint)
       const afterControl = getAfterHandle(focusedWaypoint)
       const distToBefore = distanceBetween(
-        clickX,
-        clickY,
-        beforeControl.x,
-        beforeControl.y,
+        { x: clickX, y: clickY },
+        beforeControl,
       )
       const distToAfter = distanceBetween(
-        clickX,
-        clickY,
-        afterControl.x,
-        afterControl.y,
+        { x: clickX, y: clickY },
+        afterControl,
       )
 
       focusedControlPoint =
@@ -144,7 +224,7 @@ const main = () => {
           (180 / Math.PI) +
         (focusedControlPoint === 'before' ? 180 : 0)
 
-      const dist = distanceBetween(x, y, focusedWaypoint.x, focusedWaypoint.y)
+      const dist = distanceBetween({ x, y }, focusedWaypoint)
 
       if (focusedControlPoint === 'before')
         focusedWaypoint.handleBeforeLength = dist
@@ -186,6 +266,7 @@ const main = () => {
       )
     })
     ctx.lineWidth = 2 * inches
+    ctx.strokeStyle = 'black'
     ctx.stroke()
   }
 
@@ -230,12 +311,49 @@ const main = () => {
     )
   }
 
+  const renderWheelPath = (xOffset: number, yOffset: number) => {
+    ctx.beginPath()
+    path.waypoints.forEach((startPoint, i) => {
+      const endPoint = path.waypoints[i + 1]
+      if (!endPoint) return
+      const control1 = getAfterHandle(startPoint)
+      const control2 = getBeforeHandle(endPoint)
+      for (let t = 0; t <= 1; t += 1 / bezierDivisions) {
+        const intermediatePoint = cubicBezier(
+          t,
+          startPoint,
+          endPoint,
+          control1,
+          control2,
+        )
+        const offsetPoint = {
+          x: intermediatePoint.x + xOffset,
+          y: intermediatePoint.y + yOffset,
+        }
+        ctx.lineTo(convertX(offsetPoint.x), convertY(offsetPoint.y))
+      }
+    })
+    ctx.lineWidth = inches
+    ctx.strokeStyle = 'orange'
+    ctx.stroke()
+  }
+
+  const driveWidth = 20
+  const driveLength = 30
+  const renderWheelPaths = () => {
+    renderWheelPath(driveWidth / 2, driveLength / 2)
+    renderWheelPath(-driveWidth / 2, driveLength / 2)
+    renderWheelPath(-driveWidth / 2, -driveLength / 2)
+    renderWheelPath(driveWidth / 2, -driveLength / 2)
+  }
+
   const clear = () => {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
   }
 
   const render = () => {
     clear()
+    renderWheelPaths()
     renderPath()
     renderWaypoints()
     renderHandles()
