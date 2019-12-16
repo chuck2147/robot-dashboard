@@ -4,6 +4,10 @@
     "target": "ESNext",
     "emitDeclarationOnly": true,
     "outDir": "dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "module": "ESNext",
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   }
 }
