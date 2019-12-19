@@ -19,6 +19,7 @@
   "devDependencies": {
     "@babel/core": "^7.7.5",
     "@babel/preset-typescript": "^7.7.4",
+    "@rollup/plugin-node-resolve": "^6.0.0",
     "@types/carlo": "0.9.1",
     "eslint": "6.7.2",
     "eslint-formatter-pretty": "^3.0.1",

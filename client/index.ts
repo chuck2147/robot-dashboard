@@ -1,203 +1,21 @@
-const distanceBetween = ({ x: x1, y: y1 }: Point, { x: x2, y: y2 }: Point) =>
-  Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+import {
+  distanceBetween,
+  getBeforeHandle,
+  getAfterHandle,
+  cubicBezier,
+  cubicBezierAngle,
+  lerp,
+} from './utils'
+import {
+  Path,
+  AngleLocation,
+  Waypoint,
+  PathPoint,
+  InterpolatedPath,
+  SegmentPoint,
+} from './types'
 
-const degrees = Math.PI / 180
 const bezierDivisions = 200
-
-const getAfterHandle = (point: Waypoint): Point => ({
-  x: point.handleAfterLength * Math.cos(point.heading * degrees) + point.x,
-  y: point.handleAfterLength * Math.sin(point.heading * degrees) + point.y,
-})
-
-const getBeforeHandle = (point: Waypoint): Point => ({
-  x: -point.handleBeforeLength * Math.cos(point.heading * degrees) + point.x,
-  y: -point.handleBeforeLength * Math.sin(point.heading * degrees) + point.y,
-})
-
-export const lerp = (
-  minIn: number,
-  maxIn: number,
-  minOut: number,
-  maxOut: number,
-) => {
-  const inRange = maxIn - minIn
-  const outRange = maxOut - minOut
-
-  return (value: number) => {
-    const percent = (value - minIn) / inRange
-    return percent * outRange + minOut
-  }
-}
-
-const cubicBezierComponent = (
-  t: number,
-  start: number,
-  end: number,
-  control1: number,
-  control2: number,
-) =>
-  (1 - t) ** 3 * start +
-  3 * (1 - t) ** 2 * t * control1 +
-  3 * (1 - t) * t ** 2 * control2 +
-  t ** 3 * end
-
-const cubicBezier = (
-  t: number,
-  start: Point,
-  end: Point,
-  control1: Point,
-  control2: Point,
-): Point => ({
-  x: cubicBezierComponent(t, start.x, end.x, control1.x, control2.x),
-  y: cubicBezierComponent(t, start.y, end.y, control1.y, control2.y),
-})
-
-// https://en.wikipedia.org/wiki/File:B%C3%A9zier_2_big.gif
-// https://math.stackexchange.com/a/478001
-const cubicBezierPrimeComponent = (
-  t: number,
-  start: number,
-  end: number,
-  control1: number,
-  control2: number,
-): number =>
-  (1 - t) ** 2 * (control1 - start) +
-  2 * t * (1 - t) * (control2 - control1) +
-  t ** 2 * (end - control2)
-
-const cubicBezierAngle = (
-  t: number,
-  start: Point,
-  end: Point,
-  control1: Point,
-  control2: Point,
-): number => {
-  const dY = cubicBezierPrimeComponent(
-    t,
-    start.y,
-    end.y,
-    control1.y,
-    control2.y,
-  )
-  const dX = cubicBezierPrimeComponent(
-    t,
-    start.x,
-    end.x,
-    control1.x,
-    control2.x,
-  )
-  return Math.atan2(dY, dX)
-}
-
-const cubicBezierPrimePrimeComponent = (
-  t: number,
-  start: number,
-  end: number,
-  control1: number,
-  control2: number,
-): number =>
-  (1 - t) * (control2 - 2 * control1 + start) +
-  t * (end - 2 * control2 + control1)
-
-const cubicBezierCurvature = (
-  t: number,
-  start: Point,
-  end: Point,
-  control1: Point,
-  control2: Point,
-): number => {
-  const dY = cubicBezierPrimeComponent(
-    t,
-    start.y,
-    end.y,
-    control1.y,
-    control2.y,
-  )
-  const dX = cubicBezierPrimeComponent(
-    t,
-    start.x,
-    end.x,
-    control1.x,
-    control2.x,
-  )
-  const ddY = cubicBezierPrimePrimeComponent(
-    t,
-    start.y,
-    end.y,
-    control1.y,
-    control2.y,
-  )
-  const ddX = cubicBezierPrimePrimeComponent(
-    t,
-    start.x,
-    end.x,
-    control1.x,
-    control2.x,
-  )
-  return Math.abs(dX * ddY - dY * ddX) / (dX ** 2 + dY ** 2) ** (3 / 2)
-}
-
-interface Point {
-  /** x position in inches. 0 is the bottom left of the field */
-  x: number
-  /** y position in inches. 0 is the bottom right of the field */
-  y: number
-}
-
-interface Waypoint extends Point {
-  /**
-   * The direction the robot is moving, in degrees, with 0 being right.
-   * This is *not* the way the robot is facing,
-   * because the robot's movement is separate from the robot's angle
-   */
-  heading: number
-  /** Length in inches of the handle for the part of the path that goes to the previous waypoint */
-  handleBeforeLength: number
-  /** Length in inches of the handle for the part of the path that goes to the next waypoint */
-  handleAfterLength: number
-}
-
-interface SegmentPoint extends Point {
-  /** Total distance along path segment up to point */
-  distance: number
-  /**
-   * The direction the robot is moving, in degrees, with 0 being right.
-   * This is *not* the way the robot is facing,
-   * because the robot's movement is separate from the robot's angle
-   */
-  heading: number
-}
-
-interface PathPoint extends Point {
-  // curvature: number
-  angle: number
-  /**
-   * The direction the robot is moving, in degrees, with 0 being right.
-   * This is *not* the way the robot is facing,
-   * because the robot's movement is separate from the robot's angle
-   */
-  heading: number
-}
-
-interface PathSegment {
-  start: Point
-  end: Point
-  points: SegmentPoint[]
-  length: number
-}
-
-type InterpolatedPath = PathSegment[]
-
-interface AngleLocation {
-  afterWaypoint: number
-  segmentLengthPercent: number
-  angle: number
-}
-
-interface Path {
-  waypoints: Waypoint[]
-  angles: AngleLocation[]
-}
 
 const path: Path = {
   waypoints: [
@@ -205,22 +23,22 @@ const path: Path = {
       x: 90,
       y: 40,
       heading: 90,
-      handleBeforeLength: 20,
-      handleAfterLength: 20,
+      handleBeforeLength: 80,
+      handleAfterLength: 80,
     },
     {
       x: 90,
       y: 240,
       heading: 90,
-      handleBeforeLength: 20,
-      handleAfterLength: 20,
+      handleBeforeLength: 80,
+      handleAfterLength: 80,
     },
     {
       x: 90,
       y: 440,
       heading: 90,
-      handleBeforeLength: 20,
-      handleAfterLength: 20,
+      handleBeforeLength: 80,
+      handleAfterLength: 80,
     },
   ],
   angles: [

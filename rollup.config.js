@@ -1,4 +1,7 @@
 import babel from 'rollup-plugin-babel'
+import node from '@rollup/plugin-node-resolve'
+
+const extensions = ['.js', '.ts']
 
 export default {
   input: {
@@ -7,8 +10,9 @@ export default {
   },
   external: ['carlo'],
   plugins: [
+    node({ extensions }),
     babel({
-      extensions: ['.js', '.ts'],
+      extensions,
       presets: ['@babel/preset-typescript'],
     }),
   ],
