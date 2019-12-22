@@ -28,8 +28,9 @@ export interface InterpolatedPoint extends Point {
   curvature: number
 }
 
-export type TrajectoryPoint = InterpolatedPoint & {
+export interface TrajectoryPoint extends InterpolatedPoint {
   velocity: Vector2
+  time: number
 }
 export type Trajectory = TrajectoryPoint[]
 

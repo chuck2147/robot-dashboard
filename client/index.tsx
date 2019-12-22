@@ -14,6 +14,7 @@ export const globals = css`
     body {
       margin: 0;
       background: ${backgroundColor};
+      color: white;
     }
   }
 `

@@ -96,7 +96,6 @@ export const initUiCanvas = (
   }
   const mouseUpListener = (e: MouseEvent) => {
     activeElement = null
-    onChange()
   }
   const mouseMoveListener = (e: MouseEvent) => {
     if (!focusedElement || !activeElement) return
@@ -131,9 +130,11 @@ export const initUiCanvas = (
     canvas.removeEventListener('mousemove', mouseMoveListener)
     canvas.removeEventListener('mousedown', mouseDownListener)
     canvas.removeEventListener('mouseup', mouseUpListener)
+    clear()
   }
 
   const render = () => {
+    onChange()
     clear()
     const path = pathRef.current
 

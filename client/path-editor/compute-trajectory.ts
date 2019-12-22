@@ -35,8 +35,11 @@ const maxAccel = originalMaxAccel * 12
 /** in/s */
 const maxDecel = originalMaxDecel * 12
 
+type TrajectoryPointWithoutTime = Omit<TrajectoryPoint, 'time'>
+type TrajectoryWithoutTime = TrajectoryPointWithoutTime[]
+
 const smoothTrajectory = (
-  trajectory: Trajectory,
+  trajectory: TrajectoryWithoutTime,
   direction: SmoothDirection,
 ) => {
   let lastVelocity = 0
@@ -46,7 +49,7 @@ const smoothTrajectory = (
       ? trajectory
       : trajectory.slice(0).reverse()
 
-  const newTrajectory: Trajectory = orderedArray.map(point => {
+  const newTrajectory: TrajectoryWithoutTime = orderedArray.map(point => {
     const dist = lastPoint ? distanceBetween(lastPoint, point) : 0
     const accel = direction === SmoothDirection.FORWARDS ? maxAccel : maxDecel
     // v'^2 = v0^2 + 2a(x-x0)
@@ -71,7 +74,7 @@ const smoothTrajectory = (
   return newTrajectory
 }
 
-export const computeTrajectory = (path: Path) => {
+export const computeTrajectory = (path: Path): Trajectory => {
   const interpolatedPath: InterpolatedPath = []
   path.waypoints.forEach((start, i) => {
     const end = path.waypoints[i + 1]
@@ -92,7 +95,7 @@ export const computeTrajectory = (path: Path) => {
 
   const clampVelocity = clamp(-maxVelocity, maxVelocity)
 
-  const trajectory: Trajectory = interpolatedPath.map(point => {
+  const trajectory = interpolatedPath.map(point => {
     const netVelocity = clampVelocity(curvatureVelocity / point.curvature)
     const velocity: Vector2 = {
       x: netVelocity * Math.cos(point.heading),
@@ -107,7 +110,7 @@ export const computeTrajectory = (path: Path) => {
   )
 
   let prevTime = 0
-  let prevPoint: TrajectoryPoint | null = null
+  let prevPoint: TrajectoryPointWithoutTime | null = null
 
   const trajectoryWithTime = smoothed.map(point => {
     if (!prevPoint) {

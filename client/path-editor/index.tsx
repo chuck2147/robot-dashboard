@@ -1,11 +1,13 @@
-import { h, render } from 'preact'
+import { h, Fragment } from 'preact'
 import { useRef, useEffect, useState } from 'preact/hooks'
 import fieldImage from '../../2018Field.png'
 import { css } from 'linaria'
-import { lerp } from '../utils'
+import { lerp, round2 } from '../utils'
 import { initUiCanvas } from './ui-canvas'
 import { Path } from '../types'
 import { initPathCanvas } from './path-canvas'
+import { computeTrajectory } from './compute-trajectory'
+import { initAnimationCanvas } from './animation-canvas'
 
 const fieldImageOriginalWidth = 1077
 const fieldImageOriginalHeight = 1063
@@ -65,10 +67,17 @@ const imageStyle = css`
   pointer-events: none;
 `
 
+interface Layers {
+  ui?: ReturnType<typeof initUiCanvas>
+  path?: ReturnType<typeof initPathCanvas>
+  animation?: ReturnType<typeof initAnimationCanvas>
+}
+
 export const PathEditor = () => {
   const pathCanvas = useRef<HTMLCanvasElement>()
   const uiCanvas = useRef<HTMLCanvasElement>()
-  const renderers = useRef<(() => void)[]>([])
+  const animationCanvas = useRef<HTMLCanvasElement>()
+  const layers = useRef<Layers>({})
 
   const path = useRef<Path>({
     waypoints: [
@@ -108,45 +117,69 @@ export const PathEditor = () => {
     ],
   })
 
-  const renderAllLayers = () => {
-    renderers.current.forEach(renderer => renderer())
-    console.log(path.current)
-  }
+  const [trajectory, setTrajectory] = useState(computeTrajectory(path.current))
+
+  useEffect(() => {
+    layers.current.path?.render(trajectory)
+  }, [trajectory])
+
+  useEffect(() => {
+    layers.current.animation?.stop()
+    setIsPlaying(false)
+  }, [trajectory])
 
   useEffect(() => {
     if (!uiCanvas.current) return
-
-    const ui = initUiCanvas(uiCanvas.current, path, renderAllLayers)
-    if (!ui) return
-
-    renderers.current.push(ui.render)
-
-    // const ctx = uiCanvas.current.getContext('2d')
-    // const minX = convertX(0)
-    // const maxX = convertX(27 * feet)
-    // const minY = convertY(0)
-    // const maxY = convertY(27 * feet)
-    // ctx && ctx.fillRect(minX, minY, maxX - minX, maxY - minY)
-
-    return () => ui.destroy()
+    const onPathChange = () => {
+      setTrajectory(computeTrajectory(path.current))
+    }
+    const uiLayer = initUiCanvas(uiCanvas.current, path, onPathChange)
+    layers.current.ui = uiLayer
+    return () => uiLayer?.destroy()
   }, [])
 
   useEffect(() => {
     if (!pathCanvas.current) return
-
-    const pathCanvasInstance = initPathCanvas(pathCanvas.current, path)
-    if (!pathCanvasInstance) return
-
-    renderers.current.push(pathCanvasInstance.render)
-
-    return () => pathCanvasInstance.destroy()
+    const pathLayer = initPathCanvas(pathCanvas.current)
+    layers.current.path = pathLayer
+    return () => pathLayer?.destroy()
   }, [])
 
+  useEffect(() => {
+    if (!animationCanvas.current) return
+    const animationLayer = initAnimationCanvas(animationCanvas.current)
+    layers.current.animation = animationLayer
+    return () => animationLayer?.destroy()
+  }, [])
+
+  const pathLength = trajectory[trajectory.length - 1].time
+
+  const [isPlaying, setIsPlaying] = useState(false)
+  const play = () => {
+    layers.current.animation?.play(trajectory)
+    setIsPlaying(true)
+  }
+  const stop = () => {
+    layers.current.animation?.stop()
+    setIsPlaying(false)
+  }
+
   return (
-    <div class={fieldStyle}>
-      <img src={fieldImage} alt="2018 field" class={imageStyle} />
-      <canvas ref={pathCanvas} width={canvasWidth} height={canvasHeight} />
-      <canvas ref={uiCanvas} width={canvasWidth} height={canvasHeight} />
-    </div>
+    <Fragment>
+      <div class={fieldStyle}>
+        <img src={fieldImage} alt="2018 field" class={imageStyle} />
+        <canvas ref={pathCanvas} width={canvasWidth} height={canvasHeight} />
+        <canvas
+          ref={animationCanvas}
+          width={canvasWidth}
+          height={canvasHeight}
+        />
+        <canvas ref={uiCanvas} width={canvasWidth} height={canvasHeight} />
+      </div>
+      <h1>{`${round2(pathLength)}s`}</h1>
+      <button onClick={isPlaying ? stop : play}>
+        {isPlaying ? 'Stop' : 'Animate'}
+      </button>
+    </Fragment>
   )
 }

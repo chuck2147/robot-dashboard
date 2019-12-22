@@ -194,3 +194,5 @@ export const clamp = (min: number, max: number) => (value: number) => {
   if (value > max) return max
   return value
 }
+
+export const round2 = (input: number) => Math.round(input * 100) / 100
