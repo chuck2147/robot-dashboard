@@ -144,20 +144,20 @@ export const initUiCanvas = (
       const cp1 = getAfterHandle(start)
       const cp2 = getBeforeHandle(end)
 
-      ctx.beginPath()
-      ctx.moveTo(convertX(start.x), convertY(start.y))
-      ctx.bezierCurveTo(
-        convertX(cp1.x),
-        convertY(cp1.y),
-        convertX(cp2.x),
-        convertY(cp2.y),
-        convertX(end.x),
-        convertY(end.y),
-      )
+      // ctx.beginPath()
+      // ctx.moveTo(convertX(start.x), convertY(start.y))
+      // ctx.bezierCurveTo(
+      //   convertX(cp1.x),
+      //   convertY(cp1.y),
+      //   convertX(cp2.x),
+      //   convertY(cp2.y),
+      //   convertX(end.x),
+      //   convertY(end.y),
+      // )
 
-      ctx.strokeStyle = 'black'
-      ctx.lineWidth = inchesToPixels(1)
-      ctx.stroke()
+      // ctx.strokeStyle = 'black'
+      // ctx.lineWidth = inchesToPixels(1)
+      // ctx.stroke()
     })
 
     path.waypoints.forEach(waypoint => {
