@@ -1,7 +1,9 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true
+    "composite": true,
+    "jsx": "react",
+    "jsxFactory": "h"
   },
-  "include": ["./**.ts"]
+  "include": ["./**/*.ts", "./**/*.tsx", "../config.ts"]
 }

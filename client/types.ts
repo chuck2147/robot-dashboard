@@ -1,4 +1,3 @@
-
 export interface Point {
   /** x position in inches. 0 is the bottom left of the field */
   x: number
@@ -19,36 +18,22 @@ export interface Waypoint extends Point {
   handleAfterLength: number
 }
 
-export interface SegmentPoint extends Point {
-  /** Total distance along path segment up to point */
-  distance: number
+export interface InterpolatedPoint extends Point {
   /**
-   * The direction the robot is moving, in degrees, with 0 being right.
+   * The direction the robot is moving, in radians, with 0 being right.
    * This is *not* the way the robot is facing,
    * because the robot's movement is separate from the robot's angle
    */
   heading: number
+  curvature: number
 }
 
-export interface PathPoint extends Point {
-  // curvature: number
-  angle: number
-  /**
-   * The direction the robot is moving, in degrees, with 0 being right.
-   * This is *not* the way the robot is facing,
-   * because the robot's movement is separate from the robot's angle
-   */
-  heading: number
+export type TrajectoryPoint = InterpolatedPoint & {
+  velocity: Vector2
 }
+export type Trajectory = TrajectoryPoint[]
 
-export interface PathSegment {
-  start: Point
-  end: Point
-  points: SegmentPoint[]
-  length: number
-}
-
-export type InterpolatedPath = PathSegment[]
+export type InterpolatedPath = InterpolatedPoint[]
 
 export interface AngleLocation {
   afterWaypoint: number
@@ -59,4 +44,9 @@ export interface AngleLocation {
 export interface Path {
   waypoints: Waypoint[]
   angles: AngleLocation[]
+}
+
+export interface Vector2 {
+  y: number
+  x: number
 }

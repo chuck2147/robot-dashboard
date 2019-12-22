@@ -5,7 +5,7 @@ import {
   cubicBezier,
   cubicBezierAngle,
   lerp,
-} from './utils'
+} from '../utils'
 import {
   Path,
   AngleLocation,
@@ -13,7 +13,7 @@ import {
   PathPoint,
   InterpolatedPath,
   SegmentPoint,
-} from './types'
+} from '../types'
 
 const bezierDivisions = 200
 

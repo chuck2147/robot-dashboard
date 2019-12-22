@@ -1,21 +1,28 @@
-import { Point, Waypoint } from './types';
+import { Point, Waypoint } from './types'
 
-export const distanceBetween = ({
-  x: x1,
-  y: y1
-}: Point, {
-  x: x2,
-  y: y2
-}: Point) => Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
-  
+export const distanceBetween = (
+  { x: x1, y: y1 }: Point,
+  { x: x2, y: y2 }: Point,
+) => Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
 export const getAfterHandle = (point: Waypoint): Point => ({
-  x: point.handleAfterLength * Math.cos(point.heading * (Math.PI / 180)) + point.x,
-  y: point.handleAfterLength * Math.sin(point.heading * (Math.PI / 180)) + point.y,
+  x:
+    point.handleAfterLength * Math.cos(point.heading * (Math.PI / 180)) +
+    point.x,
+  y:
+    point.handleAfterLength * Math.sin(point.heading * (Math.PI / 180)) +
+    point.y,
 })
 
-export const getBeforeHandle = (point: Waypoint): Point => ({
-  x: -point.handleBeforeLength * Math.cos(point.heading * (Math.PI / 180)) + point.x,
-  y: -point.handleBeforeLength * Math.sin(point.heading * (Math.PI / 180)) + point.y,
+export const getBeforeHandle = (waypoint: Waypoint): Point => ({
+  x:
+    -waypoint.handleBeforeLength *
+      Math.cos(waypoint.heading * (Math.PI / 180)) +
+    waypoint.x,
+  y:
+    -waypoint.handleBeforeLength *
+      Math.sin(waypoint.heading * (Math.PI / 180)) +
+    waypoint.y,
 })
 
 export const lerp = (
@@ -31,6 +38,15 @@ export const lerp = (
     const percent = (value - minIn) / inRange
     return percent * outRange + minOut
   }
+}
+
+export const lerpPercent = (
+  inputPercent: number,
+  minOut: number,
+  maxOut: number,
+) => {
+  const outRange = maxOut - minOut
+  return inputPercent * outRange + minOut
 }
 
 const cubicBezierComponent = (
@@ -139,4 +155,42 @@ export const cubicBezierCurvature = (
     control2.x,
   )
   return Math.abs(dX * ddY - dY * ddX) / (dX ** 2 + dY ** 2) ** (3 / 2)
+}
+
+export const drawCircle = (
+  ctx: CanvasRenderingContext2D,
+  { x, y }: Point,
+  color: string,
+  diameter: number,
+) => {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(x, y, diameter / 2, 0, 2 * Math.PI)
+  ctx.fill()
+}
+
+export const lerpColor = (a: string, b: string, amount: number) => {
+  if (amount > 1) amount = 1
+  if (amount < 0) amount = 0
+  const ah = parseInt(a.replace(/#/g, ''), 16)
+  const ar = ah >> 16
+  const ag = (ah >> 8) & 0xff
+  const ab = ah & 0xff
+  const bh = parseInt(b.replace(/#/g, ''), 16)
+  const br = bh >> 16
+  const bg = (bh >> 8) & 0xff
+  const bb = bh & 0xff
+  const rr = ar + amount * (br - ar)
+  const rg = ag + amount * (bg - ag)
+  const rb = ab + amount * (bb - ab)
+
+  return (
+    '#' + (((1 << 24) + (rr << 16) + (rg << 8) + rb) | 0).toString(16).slice(1)
+  )
+}
+
+export const clamp = (min: number, max: number) => (value: number) => {
+  if (value < min) return min
+  if (value > max) return max
+  return value
 }
