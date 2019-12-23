@@ -27,11 +27,13 @@ export interface InterpolatedPoint extends Point {
   heading: number
   curvature: number
   t: number
+  afterWaypoint: number
 }
 
 export interface TrajectoryPoint extends InterpolatedPoint {
   velocity: Vector2
   time: number
+  angle: number
 }
 export type Trajectory = TrajectoryPoint[]
 

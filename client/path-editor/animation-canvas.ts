@@ -53,6 +53,9 @@ export const initAnimationCanvas = (canvas: HTMLCanvasElement) => {
             y: lerpPercent(t, lastPoint.y, thisPoint.y),
             curvature: lerpPercent(t, lastPoint.curvature, thisPoint.curvature),
             time,
+            t: lerpPercent(t, lastPoint.t, thisPoint.t),
+            afterWaypoint: thisPoint.afterWaypoint,
+            angle: lerpPercent(t, lastPoint.angle, thisPoint.angle),
           }
         }
         lastPoint = thisPoint
@@ -69,11 +72,39 @@ export const initAnimationCanvas = (canvas: HTMLCanvasElement) => {
       }
       clear()
       circle(point, 'red', 34)
-      const k = inchesToPixels(0.05)
-      // line(point, {
-      //   x: point.x + k * point.velocity.x,
-      //   y: point.y + k * point.velocity.y,
-      // })
+      // const width = 30
+      // const height = 30
+
+      // ctx.beginPath()
+
+      // ctx.translate(
+      //   convertX(point.x + width / 2),
+      //   convertY(point.y + height / 2),
+      // )
+      // ctx.rotate(Math.PI / 2 - point.angle)
+      // ctx.rect(
+      //   0,
+      //   0,
+      //   // inchesToPixels(-width / 2),
+      //   // inchesToPixels(-height / 2),
+      //   inchesToPixels(width),
+      //   inchesToPixels(height),
+      // )
+      // ctx.fillStyle = 'red'
+      // ctx.fill()
+
+      // ctx.setTransform(1, 0, 0, 1, 0, 0)
+
+      const k = inchesToPixels(5)
+      // line(
+      //   point,
+      //   {
+      //     x: point.x + k * Math.cos(point.angle),
+      //     y: point.y + k * Math.sin(point.angle),
+      //   },
+      //   'red',
+      //   3,
+      // )
     }, 5)
   }
   const stop = () => {

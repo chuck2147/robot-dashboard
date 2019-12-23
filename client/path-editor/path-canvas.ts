@@ -7,7 +7,11 @@ import {
   canvasWidth,
   canvasHeight,
 } from '.'
-import { maxVelocity as originalMaxVelocity } from '../../config'
+import {
+  maxVelocity as originalMaxVelocity,
+  driveWidth,
+  driveLength,
+} from '../../config'
 
 const maxVelocity = originalMaxVelocity * 12
 
@@ -37,6 +41,29 @@ export const initPathCanvas = (canvas: HTMLCanvasElement) => {
       const color = lerpColor('#e53935', '#689f38', velocity / maxVelocity)
       line(prevPoint, point, color, 1.2)
     })
+
+    const drawWheelPath = (xOffset: number, yOffset: number) => {
+      ctx.beginPath()
+      trajectory.forEach((point, i) => {
+        const angle = point.angle - Math.PI / 2
+        const offsetPoint = {
+          x: point.x + xOffset * Math.cos(angle) - yOffset * Math.sin(angle),
+          y: point.y + yOffset * Math.cos(angle) + xOffset * Math.sin(angle),
+        }
+        if (i === 0)
+          ctx.moveTo(convertX(offsetPoint.x), convertY(offsetPoint.y))
+        else ctx.lineTo(convertX(offsetPoint.x), convertY(offsetPoint.y))
+      })
+
+      ctx.lineWidth = inchesToPixels(0.5)
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+      ctx.stroke()
+    }
+
+    drawWheelPath(driveWidth / 2, driveLength / 2)
+    drawWheelPath(-driveWidth / 2, driveLength / 2)
+    drawWheelPath(-driveWidth / 2, -driveLength / 2)
+    drawWheelPath(driveWidth / 2, -driveLength / 2)
   }
 
   const destroy = () => {

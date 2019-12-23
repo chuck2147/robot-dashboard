@@ -14,6 +14,7 @@ import {
   cubicBezierCurvature,
   clamp,
   distanceBetween,
+  lerp,
 } from '../utils'
 import {
   bezierDivisions,
@@ -35,7 +36,7 @@ const maxAccel = originalMaxAccel * 12
 /** in/s */
 const maxDecel = originalMaxDecel * 12
 
-type TrajectoryPointWithoutTime = Omit<TrajectoryPoint, 'time'>
+type TrajectoryPointWithoutTime = Omit<TrajectoryPoint, 'time' | 'angle'>
 type TrajectoryWithoutTime = TrajectoryPointWithoutTime[]
 
 const smoothTrajectory = (
@@ -90,6 +91,7 @@ export const computeTrajectory = (path: Path): Trajectory => {
         heading: cubicBezierAngle(t, start, end, cp1, cp2),
         curvature: cubicBezierCurvature(t, start, end, cp1, cp2),
         t,
+        afterWaypoint: i,
       })
     }
   })
@@ -134,5 +136,71 @@ export const computeTrajectory = (path: Path): Trajectory => {
     prevTime = time
     return { ...point, time }
   })
-  return trajectoryWithTime
+
+  const anglePointsWithTime = path.angles
+    .sort((a, b) => {
+      if (a.afterWaypoint > b.afterWaypoint) return 1
+      if (b.afterWaypoint > a.afterWaypoint) return -1
+      return a.t - b.t
+    })
+    .map(anglePoint => {
+      let beforePoint = trajectoryWithTime[0]
+      let afterPoint = trajectoryWithTime[0]
+      const t = anglePoint.t
+
+      for (
+        let i = bezierDivisions * anglePoint.afterWaypoint;
+        i < bezierDivisions * (anglePoint.afterWaypoint + 1);
+        i++
+      ) {
+        beforePoint = trajectoryWithTime[i]
+        afterPoint = trajectoryWithTime[i + 1]
+
+        if (
+          beforePoint &&
+          afterPoint &&
+          beforePoint.t < t &&
+          t < afterPoint.t
+        ) {
+          break
+        }
+      }
+      const time = lerp(
+        beforePoint.t,
+        afterPoint.t,
+        beforePoint.time,
+        afterPoint.time,
+      )(t)
+      return { ...anglePoint, time }
+    })
+
+  const trajectoryWithAngles = trajectoryWithTime.map(point => {
+    if (point.time <= anglePointsWithTime[0].time) {
+      const angle = anglePointsWithTime[0].angle
+      return { ...point, angle }
+    }
+    const lastAnglePoint = anglePointsWithTime[anglePointsWithTime.length - 1]
+    if (point.time >= lastAnglePoint.time) {
+      const angle = lastAnglePoint.angle
+      return { ...point, angle }
+    }
+    const anglePointBefore = anglePointsWithTime
+      .slice()
+      .reverse()
+      .find(anglePoint => anglePoint.time < point.time)
+    const anglePointAfter = anglePointsWithTime.find(
+      anglePoint => anglePoint.time > point.time,
+    )
+    if (!anglePointBefore || !anglePointAfter)
+      throw new Error('could not find angle point before/after')
+    const angle = lerp(
+      anglePointBefore.time,
+      anglePointAfter.time,
+      anglePointBefore.angle,
+      anglePointAfter.angle,
+    )(point.time)
+    return { ...point, angle }
+  })
+
+  return trajectoryWithAngles
 }

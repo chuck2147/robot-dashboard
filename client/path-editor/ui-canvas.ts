@@ -15,10 +15,11 @@ import {
   distanceBetween,
   getBeforeHandle,
   getAfterHandle,
-  cubicBezier,
   locateAnglePoint,
   findNearestPointOnPath,
+  cubicBezierAngle,
 } from '../utils'
+import { bezierDivisions } from '../../config'
 
 const anglePointRadius = 15
 
@@ -129,7 +130,7 @@ export const initUiCanvas = (
     activeElement = null
     render()
   }
-  const mouseUpListener = (e: MouseEvent) => {
+  const mouseUpListener = () => {
     activeElement = null
   }
   const mouseMoveListener = (e: MouseEvent) => {
@@ -143,7 +144,6 @@ export const initUiCanvas = (
         focusedElement,
         findNearestPointOnPath(mouseLocation, pathRef.current),
       )
-      // TODO: Re-sort array of angles in case they get reordered?
     } else if (activeElement === 'anglehandle') {
       if (isWaypoint(focusedElement)) return
       const anglePoint = locateAnglePoint(focusedElement, pathRef.current)
@@ -169,14 +169,45 @@ export const initUiCanvas = (
     render()
   }
 
+  const doubleClickListener = (e: MouseEvent) => {
+    const clickLocation = getPointFromEvent(e)
+
+    if (displayMode === DisplayMode.AnglePoints) {
+      pathRef.current.angles.push({
+        ...findNearestPointOnPath(clickLocation, pathRef.current),
+        angle: Math.PI / 2,
+      })
+    } else {
+      const { afterWaypoint, t } = findNearestPointOnPath(
+        clickLocation,
+        pathRef.current,
+      )
+      const bezierStart = pathRef.current.waypoints[afterWaypoint]
+      const bezierEnd = pathRef.current.waypoints[afterWaypoint + 1]
+      const cp1 = getAfterHandle(bezierStart)
+      const cp2 = getBeforeHandle(bezierEnd)
+      const heading =
+        cubicBezierAngle(t, bezierStart, bezierEnd, cp1, cp2) * (180 / Math.PI)
+      pathRef.current.waypoints.splice(afterWaypoint + 1, 0, {
+        handleAfterLength: 15,
+        handleBeforeLength: 15,
+        heading,
+        ...clickLocation,
+      })
+    }
+    render()
+  }
+
   canvas.addEventListener('mousemove', mouseMoveListener)
   canvas.addEventListener('mousedown', mouseDownListener)
   canvas.addEventListener('mouseup', mouseUpListener)
+  canvas.addEventListener('dblclick', doubleClickListener)
 
   const destroy = () => {
     canvas.removeEventListener('mousemove', mouseMoveListener)
     canvas.removeEventListener('mousedown', mouseDownListener)
     canvas.removeEventListener('mouseup', mouseUpListener)
+    canvas.removeEventListener('dblclick', doubleClickListener)
     clear()
   }
 
