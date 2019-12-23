@@ -1,10 +1,10 @@
-import { h, Fragment } from 'preact'
+import { h } from 'preact'
 import { useRef, useEffect, useState } from 'preact/hooks'
 import fieldImage from '../../2018Field.png'
 import { css } from 'linaria'
-import { lerp, round2 } from '../utils'
+import { lerp } from '../utils'
 import { initUiCanvas } from './ui-canvas'
-import { Path } from '../types'
+import { Path, DisplayMode } from '../types'
 import { initPathCanvas } from './path-canvas'
 import { computeTrajectory } from './compute-trajectory'
 import { initAnimationCanvas } from './animation-canvas'
@@ -48,9 +48,22 @@ export const mouseXToFieldX = (x: number) =>
 export const mouseYToFieldY = (y: number) =>
   lerp(fieldYMax, fieldYMin, 0, fieldHeight)(y)
 
+const pathEditorStyle = css`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 100vh;
+`
+
+const rightPanelStyle = css`
+  padding: 1rem;
+  display: grid;
+  grid-gap: 1rem;
+  grid-auto-rows: max-content;
+`
+
 const fieldStyle = css`
-  height: 90vh;
-  width: ${90 * (fieldImageOriginalWidth / fieldImageOriginalHeight)}vh;
+  height: 100vh;
+  width: ${100 * (fieldImageOriginalWidth / fieldImageOriginalHeight)}vh;
   position: relative;
 
   & * {
@@ -106,26 +119,26 @@ export const PathEditor = () => {
     angles: [
       {
         afterWaypoint: 0,
-        segmentLengthPercent: 0.25,
-        angle: 90,
+        t: 0.25,
+        angle: Math.PI / 2,
       },
       {
         afterWaypoint: 1,
-        segmentLengthPercent: 0.75,
-        angle: 60,
+        t: 0.75,
+        angle: Math.PI / 4,
       },
     ],
   })
 
   const [trajectory, setTrajectory] = useState(computeTrajectory(path.current))
+  const [displayMode, setDisplayMode] = useState(DisplayMode.Waypoints)
 
   useEffect(() => {
     layers.current.path?.render(trajectory)
   }, [trajectory])
 
   useEffect(() => {
-    layers.current.animation?.stop()
-    setIsPlaying(false)
+    stopAnimation()
   }, [trajectory])
 
   useEffect(() => {
@@ -152,20 +165,24 @@ export const PathEditor = () => {
     return () => animationLayer?.destroy()
   }, [])
 
+  useEffect(() => {
+    layers.current.ui?.setDisplayMode(displayMode)
+  }, [displayMode])
+
   const pathLength = trajectory[trajectory.length - 1].time
 
   const [isPlaying, setIsPlaying] = useState(false)
-  const play = () => {
+  const playAnimation = () => {
     layers.current.animation?.play(trajectory)
     setIsPlaying(true)
   }
-  const stop = () => {
+  const stopAnimation = () => {
     layers.current.animation?.stop()
     setIsPlaying(false)
   }
 
   return (
-    <Fragment>
+    <div class={pathEditorStyle}>
       <div class={fieldStyle}>
         <img src={fieldImage} alt="2018 field" class={imageStyle} />
         <canvas ref={pathCanvas} width={canvasWidth} height={canvasHeight} />
@@ -176,10 +193,31 @@ export const PathEditor = () => {
         />
         <canvas ref={uiCanvas} width={canvasWidth} height={canvasHeight} />
       </div>
-      <h1>{`${round2(pathLength)}s`}</h1>
-      <button onClick={isPlaying ? stop : play}>
-        {isPlaying ? 'Stop' : 'Animate'}
-      </button>
-    </Fragment>
+      <div class={rightPanelStyle}>
+        <h1>{`${pathLength.toPrecision(4)}s`}</h1>
+        <button onClick={isPlaying ? stopAnimation : playAnimation}>
+          {isPlaying ? 'Stop' : 'Animate'}
+        </button>
+        <button
+          style={{
+            background:
+              displayMode === DisplayMode.AnglePoints ? 'blue' : 'red',
+            border: 'none',
+            color: 'white',
+          }}
+          onClick={() =>
+            setDisplayMode(m =>
+              m === DisplayMode.AnglePoints
+                ? DisplayMode.Waypoints
+                : DisplayMode.AnglePoints,
+            )
+          }
+        >
+          {displayMode === DisplayMode.AnglePoints
+            ? 'Showing Angle Points'
+            : 'Showing Waypoints'}
+        </button>
+      </div>
+    </div>
   )
 }

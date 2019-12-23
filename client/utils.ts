@@ -1,4 +1,4 @@
-import { Point, Waypoint } from './types'
+import { Point, Waypoint, AnglePoint, Path } from './types'
 
 export const distanceBetween = (
   { x: x1, y: y1 }: Point,
@@ -195,4 +195,61 @@ export const clamp = (min: number, max: number) => (value: number) => {
   return value
 }
 
-export const round2 = (input: number) => Math.round(input * 100) / 100
+const avg = (a: number, b: number) => (a + b) / 2
+
+/** Returns the t-value for the nearest point along the given bezier */
+const findNearestPointOnBezier = (
+  location: Point,
+  start: Point,
+  end: Point,
+  cp1: Point,
+  cp2: Point,
+) => {
+  const bezierDivisions = 500
+  let winnerT = 0
+  let winnerDist = Infinity
+  for (let t = 0; t <= 1; t += 1 / bezierDivisions) {
+    const dist = distanceBetween(location, cubicBezier(t, start, end, cp1, cp2))
+    if (dist < winnerDist) {
+      winnerDist = dist
+      winnerT = t
+    }
+  }
+  return winnerT
+}
+
+export const findNearestPointOnPath = (location: Point, path: Path) => {
+  let winnerAfterWaypoint = 0
+  let winnerT = 0
+  let winnerDist = Infinity
+  path.waypoints.forEach((start, i) => {
+    const end = path.waypoints[i + 1]
+    if (!end) return
+    const cp1 = getAfterHandle(start)
+    const cp2 = getBeforeHandle(end)
+
+    const t = findNearestPointOnBezier(location, start, end, cp1, cp2)
+    const dist = distanceBetween(location, cubicBezier(t, start, end, cp1, cp2))
+    if (dist < winnerDist) {
+      winnerDist = dist
+      winnerAfterWaypoint = i
+      winnerT = t
+    }
+  })
+  const result: Omit<AnglePoint, 'angle'> = {
+    afterWaypoint: winnerAfterWaypoint,
+    t: winnerT,
+  }
+
+  return result
+}
+
+export const locateAnglePoint = (anglePoint: AnglePoint, path: Path) => {
+  const segmentStartPoint = path.waypoints[anglePoint.afterWaypoint]
+  const segmentEndPoint = path.waypoints[anglePoint.afterWaypoint + 1]
+  if (!segmentStartPoint || !segmentEndPoint)
+    throw new Error('Could not find segment for angle')
+  const cp1 = getAfterHandle(segmentStartPoint)
+  const cp2 = getBeforeHandle(segmentEndPoint)
+  return cubicBezier(anglePoint.t, segmentStartPoint, segmentEndPoint, cp1, cp2)
+}

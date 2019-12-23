@@ -1,4 +1,4 @@
-import { Point, Waypoint, Path } from '../types'
+import { Point, Waypoint, Path, DisplayMode, AnglePoint } from '../types'
 import {
   mouseXToFieldX,
   mouseYToFieldY,
@@ -8,13 +8,24 @@ import {
   canvasHeight,
   inchesToPixels,
 } from '.'
+import { darken, transparentize } from 'polished'
 import { Ref } from 'preact/hooks'
 import {
   drawCircle,
   distanceBetween,
   getBeforeHandle,
   getAfterHandle,
+  cubicBezier,
+  locateAnglePoint,
+  findNearestPointOnPath,
 } from '../utils'
+
+const anglePointRadius = 15
+
+const isWaypoint = (
+  focusedElement: null | Waypoint | AnglePoint,
+): focusedElement is Waypoint =>
+  focusedElement !== null && 'heading' in focusedElement
 
 export const initUiCanvas = (
   canvas: HTMLCanvasElement,
@@ -52,39 +63,63 @@ export const initUiCanvas = (
     return { x: mouseXToFieldX(originalX), y: mouseYToFieldY(originalY) }
   }
 
-  let focusedElement: null | Waypoint = null
+  let focusedElement: null | Waypoint | AnglePoint = null
   let activeElement:
     | null
     | 'waypoint'
     | 'beforehandle'
     | 'afterhandle'
-    | 'anglepoint' = null
+    | 'anglepoint'
+    | 'anglehandle' = null
+
+  let displayMode = DisplayMode.Waypoints
 
   const clickThreshold = 5
 
   const mouseDownListener = (e: MouseEvent) => {
     const clickLocation = getPointFromEvent(e)
-    const matchingWaypoint = pathRef.current.waypoints.find(
-      p => distanceBetween(p, clickLocation) < clickThreshold,
-    )
-    if (matchingWaypoint) {
-      focusedElement = matchingWaypoint
-      activeElement = 'waypoint'
-      render()
-      return
-    }
-
-    if (focusedElement) {
-      const beforeHandle = getBeforeHandle(focusedElement)
-      const afterHandle = getAfterHandle(focusedElement)
-
-      if (distanceBetween(beforeHandle, clickLocation) < clickThreshold) {
-        activeElement = 'beforehandle'
+    if (displayMode === DisplayMode.Waypoints) {
+      const matchingWaypoint = pathRef.current.waypoints.find(
+        p => distanceBetween(p, clickLocation) < clickThreshold,
+      )
+      if (matchingWaypoint) {
+        focusedElement = matchingWaypoint
+        activeElement = 'waypoint'
         render()
         return
       }
-      if (distanceBetween(afterHandle, clickLocation) < clickThreshold) {
-        activeElement = 'afterhandle'
+
+      if (focusedElement && isWaypoint(focusedElement)) {
+        const beforeHandle = getBeforeHandle(focusedElement)
+        const afterHandle = getAfterHandle(focusedElement)
+
+        if (distanceBetween(beforeHandle, clickLocation) < clickThreshold) {
+          activeElement = 'beforehandle'
+          render()
+          return
+        }
+        if (distanceBetween(afterHandle, clickLocation) < clickThreshold) {
+          activeElement = 'afterhandle'
+          render()
+          return
+        }
+      }
+    } else {
+      const matchingAnglePoint = pathRef.current.angles.find(anglePoint => {
+        const point = locateAnglePoint(anglePoint, pathRef.current)
+        const dist = distanceBetween(point, clickLocation)
+        if (dist < clickThreshold) activeElement = 'anglepoint'
+        else activeElement = 'anglehandle'
+        return dist < anglePointRadius
+      })
+      if (matchingAnglePoint) {
+        focusedElement = matchingAnglePoint
+        const anglePoint = locateAnglePoint(matchingAnglePoint, pathRef.current)
+        if (activeElement === 'anglehandle') {
+          const deltaY = clickLocation.y - anglePoint.y
+          const deltaX = clickLocation.x - anglePoint.x
+          focusedElement.angle = Math.atan2(deltaY, deltaX)
+        }
         render()
         return
       }
@@ -103,8 +138,20 @@ export const initUiCanvas = (
     if (activeElement === 'waypoint') {
       Object.assign(focusedElement, mouseLocation)
     } else if (activeElement === 'anglepoint') {
-      // asdf
+      if (isWaypoint(focusedElement)) return
+      Object.assign(
+        focusedElement,
+        findNearestPointOnPath(mouseLocation, pathRef.current),
+      )
+      // TODO: Re-sort array of angles in case they get reordered?
+    } else if (activeElement === 'anglehandle') {
+      if (isWaypoint(focusedElement)) return
+      const anglePoint = locateAnglePoint(focusedElement, pathRef.current)
+      const deltaY = mouseLocation.y - anglePoint.y
+      const deltaX = mouseLocation.x - anglePoint.x
+      focusedElement.angle = Math.atan2(deltaY, deltaX)
     } else {
+      if (!isWaypoint(focusedElement)) return
       focusedElement.heading =
         Math.atan2(
           mouseLocation.y - focusedElement.y,
@@ -138,29 +185,6 @@ export const initUiCanvas = (
     clear()
     const path = pathRef.current
 
-    path.waypoints.forEach((start, i) => {
-      const end = path.waypoints[i + 1]
-      if (!end) return
-
-      const cp1 = getAfterHandle(start)
-      const cp2 = getBeforeHandle(end)
-
-      // ctx.beginPath()
-      // ctx.moveTo(convertX(start.x), convertY(start.y))
-      // ctx.bezierCurveTo(
-      //   convertX(cp1.x),
-      //   convertY(cp1.y),
-      //   convertX(cp2.x),
-      //   convertY(cp2.y),
-      //   convertX(end.x),
-      //   convertY(end.y),
-      // )
-
-      // ctx.strokeStyle = 'black'
-      // ctx.lineWidth = inchesToPixels(1)
-      // ctx.stroke()
-    })
-
     path.waypoints.forEach(waypoint => {
       const isFocused = waypoint === focusedElement
 
@@ -175,12 +199,57 @@ export const initUiCanvas = (
         circle(afterHandle, 'green', 2)
       }
 
+      const waypointColor = 'red'
+      const color = isFocused ? darken(0.1, waypointColor) : waypointColor
       // Main dot
-      circle(waypoint, isFocused ? 'blue' : 'red', 3)
+      circle(
+        waypoint,
+        displayMode === DisplayMode.Waypoints
+          ? color
+          : transparentize(0.7, color),
+        3,
+      )
     })
+
+    path.angles.forEach(anglePoint => {
+      const point = locateAnglePoint(anglePoint, path)
+      const anglePointColor = 'blue'
+      const isFocused = anglePoint === focusedElement
+      const color = isFocused ? darken(0.3, anglePointColor) : 'blue'
+
+      const lineLength =
+        displayMode === DisplayMode.AnglePoints ? anglePointRadius : 10
+
+      const colorWithOpacity =
+        displayMode === DisplayMode.AnglePoints
+          ? color
+          : transparentize(0.7, color)
+
+      line(
+        point,
+        {
+          x: point.x + lineLength * Math.cos(anglePoint.angle),
+          y: point.y + lineLength * Math.sin(anglePoint.angle),
+        },
+        colorWithOpacity,
+      )
+      if (displayMode === DisplayMode.AnglePoints) {
+        circle(point, transparentize(0.9, color), anglePointRadius * 2)
+      }
+
+      circle(point, colorWithOpacity, 3)
+    })
+  }
+
+  const setDisplayMode = (newDisplayMode: DisplayMode) => {
+    displayMode = newDisplayMode
+    focusedElement = null
+    activeElement = null
+
+    render()
   }
 
   render()
 
-  return { destroy, render }
+  return { destroy, render, setDisplayMode }
 }

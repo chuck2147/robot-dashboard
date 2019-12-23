@@ -26,6 +26,7 @@ export interface InterpolatedPoint extends Point {
    */
   heading: number
   curvature: number
+  t: number
 }
 
 export interface TrajectoryPoint extends InterpolatedPoint {
@@ -36,18 +37,24 @@ export type Trajectory = TrajectoryPoint[]
 
 export type InterpolatedPath = InterpolatedPoint[]
 
-export interface AngleLocation {
+export interface AnglePoint {
   afterWaypoint: number
-  segmentLengthPercent: number
+  /** `t` value of point along it's segment */
+  t: number
   angle: number
 }
 
 export interface Path {
   waypoints: Waypoint[]
-  angles: AngleLocation[]
+  angles: AnglePoint[]
 }
 
 export interface Vector2 {
   y: number
   x: number
+}
+
+export enum DisplayMode {
+  Waypoints,
+  AnglePoints,
 }

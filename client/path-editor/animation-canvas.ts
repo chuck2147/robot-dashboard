@@ -68,12 +68,12 @@ export const initAnimationCanvas = (canvas: HTMLCanvasElement) => {
         return
       }
       clear()
-      circle(point, 'red', inchesToPixels(8))
+      circle(point, 'red', 34)
       const k = inchesToPixels(0.05)
-      line(point, {
-        x: point.x + k * point.velocity.x,
-        y: point.y + k * point.velocity.y,
-      })
+      // line(point, {
+      //   x: point.x + k * point.velocity.x,
+      //   y: point.y + k * point.velocity.y,
+      // })
     }, 5)
   }
   const stop = () => {

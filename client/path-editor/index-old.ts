@@ -8,7 +8,7 @@ import {
 } from '../utils'
 import {
   Path,
-  AngleLocation,
+  AnglePoint,
   Waypoint,
   PathPoint,
   InterpolatedPath,
@@ -154,7 +154,7 @@ const main = () => {
             return { ...angle, afterWaypoint: angle.afterWaypoint }
           return angle
         })
-        .filter((angle): angle is AngleLocation => angle !== null)
+        .filter((angle): angle is AnglePoint => angle !== null)
       focusedWaypoint = null
       focusedControlPoint = null
       render()

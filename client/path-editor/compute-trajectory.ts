@@ -89,6 +89,7 @@ export const computeTrajectory = (path: Path): Trajectory => {
         ...intermediatePoint,
         heading: cubicBezierAngle(t, start, end, cp1, cp2),
         curvature: cubicBezierCurvature(t, start, end, cp1, cp2),
+        t,
       })
     }
   })
