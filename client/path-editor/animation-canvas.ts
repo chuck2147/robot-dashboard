@@ -71,7 +71,7 @@ export const initAnimationCanvas = (canvas: HTMLCanvasElement) => {
         return
       }
       clear()
-      circle(point, 'red', 34)
+      // circle(point, 'red', 34)
       // const width = 30
       // const height = 30
 
@@ -96,15 +96,15 @@ export const initAnimationCanvas = (canvas: HTMLCanvasElement) => {
       // ctx.setTransform(1, 0, 0, 1, 0, 0)
 
       const k = inchesToPixels(5)
-      // line(
-      //   point,
-      //   {
-      //     x: point.x + k * Math.cos(point.angle),
-      //     y: point.y + k * Math.sin(point.angle),
-      //   },
-      //   'red',
-      //   3,
-      // )
+      line(
+        point,
+        {
+          x: point.x + k * Math.cos(point.angle),
+          y: point.y + k * Math.sin(point.angle),
+        },
+        'red',
+        3,
+      )
     }, 5)
   }
   const stop = () => {

@@ -8,6 +8,10 @@ export const maxDecel = 30
 /** ft/s */
 export const maxVelocity = 13
 
+/** rad/s */
+export const angularAccel = 15
+export const angularDecel = angularAccel
+
 export const curvatureVelocity = 5
 
 export const driveWidth = 26

@@ -15,6 +15,7 @@ import {
   clamp,
   distanceBetween,
   lerp,
+  sqrtKeepSign,
 } from '../utils'
 import {
   bezierDivisions,
@@ -22,7 +23,10 @@ import {
   maxAccel as originalMaxAccel,
   maxDecel as originalMaxDecel,
   curvatureVelocity,
+  angularAccel,
+  angularDecel,
 } from '../../config'
+import { motionProfile } from './motion-profile'
 
 enum SmoothDirection {
   FORWARDS,
@@ -193,13 +197,25 @@ export const computeTrajectory = (path: Path): Trajectory => {
     )
     if (!anglePointBefore || !anglePointAfter)
       throw new Error('could not find angle point before/after')
-    const angle = lerp(
-      anglePointBefore.time,
-      anglePointAfter.time,
-      anglePointBefore.angle,
-      anglePointAfter.angle,
-    )(point.time)
-    return { ...point, angle }
+
+    const duration = anglePointAfter.time - anglePointBefore.time
+    const startAngle = anglePointBefore.angle
+    const endAngle = anglePointAfter.angle
+    const distance = endAngle - startAngle
+
+    const profileResult = motionProfile({
+      time: point.time - anglePointBefore.time,
+      distance,
+      duration,
+      accel: angularAccel,
+      decel: angularDecel,
+    })
+
+    return {
+      ...point,
+      angle: profileResult.position + startAngle,
+      angularVelocity: profileResult.velocity,
+    }
   })
 
   return trajectoryWithAngles

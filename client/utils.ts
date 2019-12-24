@@ -253,3 +253,8 @@ export const locateAnglePoint = (anglePoint: AnglePoint, path: Path) => {
   const cp2 = getBeforeHandle(segmentEndPoint)
   return cubicBezier(anglePoint.t, segmentStartPoint, segmentEndPoint, cp1, cp2)
 }
+
+export const rotatePoint = (center: Point, offset: Point, angle: number): Point => ({
+  x: center.x + offset.x * Math.cos(angle) - offset.y * Math.sin(angle),
+  y: center.y + offset.y * Math.cos(angle) + offset.x * Math.sin(angle),
+})

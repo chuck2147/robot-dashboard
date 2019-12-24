@@ -1,5 +1,5 @@
 import { Point, Trajectory } from '../types'
-import { lerpColor } from '../utils'
+import { lerpColor, rotatePoint } from '../utils'
 import {
   convertX,
   convertY,
@@ -44,19 +44,22 @@ export const initPathCanvas = (canvas: HTMLCanvasElement) => {
 
     const drawWheelPath = (xOffset: number, yOffset: number) => {
       ctx.beginPath()
+      let hasError = false
       trajectory.forEach((point, i) => {
+        if (isNaN(point.angle)) hasError = true
         const angle = point.angle - Math.PI / 2
-        const offsetPoint = {
-          x: point.x + xOffset * Math.cos(angle) - yOffset * Math.sin(angle),
-          y: point.y + yOffset * Math.cos(angle) + xOffset * Math.sin(angle),
-        }
+        const offsetPoint = rotatePoint(
+          point,
+          { x: xOffset, y: yOffset },
+          angle,
+        )
         if (i === 0)
           ctx.moveTo(convertX(offsetPoint.x), convertY(offsetPoint.y))
         else ctx.lineTo(convertX(offsetPoint.x), convertY(offsetPoint.y))
       })
 
       ctx.lineWidth = inchesToPixels(0.5)
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+      ctx.strokeStyle = hasError ? 'red' : 'rgba(0,0,0,0.2)'
       ctx.stroke()
     }
 
