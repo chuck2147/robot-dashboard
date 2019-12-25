@@ -199,16 +199,45 @@ export const initUiCanvas = (
     render()
   }
 
+  const keyListener = (e: KeyboardEvent) => {
+    if (e.key === 'Delete' && focusedElement) {
+      if (isWaypoint(focusedElement)) {
+        // Delete focused waypoint
+        // Each anglepoint gets assigned a new location based on the nearest point on the new path
+        const anglePointLocations = pathRef.current.angles.map(anglePoint => ({
+          angle: anglePoint.angle,
+          ...locateAnglePoint(anglePoint, pathRef.current),
+        }))
+        pathRef.current.waypoints = pathRef.current.waypoints.filter(
+          p => p !== focusedElement,
+        )
+        pathRef.current.angles = anglePointLocations.map(({ angle, x, y }) => ({
+          ...findNearestPointOnPath({ x, y }, pathRef.current),
+          angle,
+        }))
+        render()
+      } else {
+        // Delete focused anglepoint
+        pathRef.current.angles = pathRef.current.angles.filter(
+          anglePoint => anglePoint !== focusedElement,
+        )
+        render()
+      }
+    }
+  }
+
   canvas.addEventListener('mousemove', mouseMoveListener)
   canvas.addEventListener('mousedown', mouseDownListener)
   canvas.addEventListener('mouseup', mouseUpListener)
   canvas.addEventListener('dblclick', doubleClickListener)
+  window.addEventListener('keypress', keyListener)
 
   const destroy = () => {
     canvas.removeEventListener('mousemove', mouseMoveListener)
     canvas.removeEventListener('mousedown', mouseDownListener)
     canvas.removeEventListener('mouseup', mouseUpListener)
     canvas.removeEventListener('dblclick', doubleClickListener)
+    window.removeEventListener('keypress', keyListener)
     clear()
   }
 
