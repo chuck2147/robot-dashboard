@@ -60,3 +60,26 @@ export enum DisplayMode {
   Waypoints,
   AnglePoints,
 }
+
+type RequestIdleCallbackHandle = any
+type RequestIdleCallbackOptions = {
+  timeout: number
+}
+type RequestIdleCallbackDeadline = {
+  readonly didTimeout: boolean
+  timeRemaining: () => number
+}
+type RequestIdleCallback = (
+  callback: (deadline: RequestIdleCallbackDeadline) => void,
+  opts?: RequestIdleCallbackOptions,
+) => RequestIdleCallbackHandle
+type CancelIdleCallback = (handle: RequestIdleCallbackHandle) => void
+
+declare global {
+  const requestIdleCallback: RequestIdleCallback
+  const cancelIdleCallback: CancelIdleCallback
+  interface Window {
+    requestIdleCallback: RequestIdleCallback
+    cancelIdleCallback: CancelIdleCallback
+  }
+}

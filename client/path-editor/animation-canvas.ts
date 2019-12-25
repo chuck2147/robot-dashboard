@@ -6,7 +6,7 @@ import {
   inchesToPixels,
 } from '.'
 import { Trajectory, TrajectoryPoint, Point } from '../types'
-import { lerpPercent, drawCircle } from '../utils'
+import { lerpPercent, drawCircle, drawBumpers } from '../utils'
 
 export const initAnimationCanvas = (canvas: HTMLCanvasElement) => {
   const ctx = canvas.getContext('2d')
@@ -71,40 +71,8 @@ export const initAnimationCanvas = (canvas: HTMLCanvasElement) => {
         return
       }
       clear()
-      // circle(point, 'red', 34)
-      // const width = 30
-      // const height = 30
 
-      // ctx.beginPath()
-
-      // ctx.translate(
-      //   convertX(point.x + width / 2),
-      //   convertY(point.y + height / 2),
-      // )
-      // ctx.rotate(Math.PI / 2 - point.angle)
-      // ctx.rect(
-      //   0,
-      //   0,
-      //   // inchesToPixels(-width / 2),
-      //   // inchesToPixels(-height / 2),
-      //   inchesToPixels(width),
-      //   inchesToPixels(height),
-      // )
-      // ctx.fillStyle = 'red'
-      // ctx.fill()
-
-      // ctx.setTransform(1, 0, 0, 1, 0, 0)
-
-      const k = inchesToPixels(5)
-      line(
-        point,
-        {
-          x: point.x + k * Math.cos(point.angle),
-          y: point.y + k * Math.sin(point.angle),
-        },
-        'red',
-        3,
-      )
+      drawBumpers(ctx, point, point.angle)
     }, 5)
   }
   const stop = () => {

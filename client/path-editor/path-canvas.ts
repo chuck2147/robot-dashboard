@@ -1,5 +1,5 @@
 import { Point, Trajectory } from '../types'
-import { lerpColor, rotatePoint } from '../utils'
+import { lerpColor, rotatePoint, drawBumpers } from '../utils'
 import {
   convertX,
   convertY,
@@ -11,7 +11,9 @@ import {
   maxVelocity as originalMaxVelocity,
   driveWidth,
   driveLength,
+  bezierDivisions,
 } from '../../config'
+import { transparentize } from 'polished'
 
 const maxVelocity = originalMaxVelocity * 12
 
@@ -34,12 +36,16 @@ export const initPathCanvas = (canvas: HTMLCanvasElement) => {
   const render = (trajectory: Trajectory) => {
     clear()
 
+    const opacity = 0.992 - 6 / bezierDivisions
+    const transparent = transparentize(opacity)
+
     trajectory.forEach((point, i) => {
       const prevPoint = trajectory[i - 1]
       if (!prevPoint) return
       const velocity = Math.sqrt(point.velocity.x ** 2 + point.velocity.y ** 2)
       const color = lerpColor('#e53935', '#689f38', velocity / maxVelocity)
       line(prevPoint, point, color, 1.2)
+      drawBumpers(ctx, point, point.angle, transparent(color))
     })
 
     const drawWheelPath = (xOffset: number, yOffset: number) => {

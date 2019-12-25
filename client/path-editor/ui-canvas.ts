@@ -18,6 +18,7 @@ import {
   locateAnglePoint,
   findNearestPointOnPath,
   cubicBezierAngle,
+  drawBumpers,
 } from '../utils'
 import { bezierDivisions } from '../../config'
 

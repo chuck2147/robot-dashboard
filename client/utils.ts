@@ -1,4 +1,7 @@
 import { Point, Waypoint, AnglePoint, Path } from './types'
+import { convertX, convertY } from './path-editor'
+import { bumperWidth, bumperLength } from '../config'
+import { transparentize } from 'polished'
 
 export const distanceBetween = (
   { x: x1, y: y1 }: Point,
@@ -254,7 +257,53 @@ export const locateAnglePoint = (anglePoint: AnglePoint, path: Path) => {
   return cubicBezier(anglePoint.t, segmentStartPoint, segmentEndPoint, cp1, cp2)
 }
 
-export const rotatePoint = (center: Point, offset: Point, angle: number): Point => ({
+export const rotatePoint = (
+  center: Point,
+  offset: Point,
+  angle: number,
+): Point => ({
   x: center.x + offset.x * Math.cos(angle) - offset.y * Math.sin(angle),
   y: center.y + offset.y * Math.cos(angle) + offset.x * Math.sin(angle),
 })
+
+export const drawBumpers = (
+  ctx: CanvasRenderingContext2D,
+  robotCenter: Point,
+  angle: number,
+  color = transparentize(0.5, 'blue'),
+) => {
+  const radius = 3
+  const width = bumperWidth
+  const height = bumperLength
+
+  const point = (x: number, y: number): [number, number] => {
+    const newPoint = rotatePoint(robotCenter, { x, y }, angle - Math.PI / 2)
+    return [convertX(newPoint.x), convertY(newPoint.y)]
+  }
+
+  ctx.beginPath()
+  ctx.moveTo(...point(-width / 2 + radius, -height / 2))
+  ctx.lineTo(...point(width / 2 - radius, -height / 2))
+  ctx.quadraticCurveTo(
+    ...point(width / 2, -height / 2),
+    ...point(width / 2, -height / 2 + radius),
+  )
+  ctx.lineTo(...point(width / 2, height / 2 - radius))
+  ctx.quadraticCurveTo(
+    ...point(width / 2, height / 2),
+    ...point(width / 2 - radius, height / 2),
+  )
+  ctx.lineTo(...point(-width / 2 + radius, height / 2))
+  ctx.quadraticCurveTo(
+    ...point(-width / 2, height / 2),
+    ...point(-width / 2, height / 2 - radius),
+  )
+  ctx.lineTo(...point(-width / 2, -height / 2 + radius))
+  ctx.quadraticCurveTo(
+    ...point(-width / 2, -height / 2),
+    ...point(-width / 2 + radius, -height / 2),
+  )
+  ctx.closePath()
+  ctx.fillStyle = color
+  ctx.fill()
+}

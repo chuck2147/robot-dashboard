@@ -109,8 +109,8 @@ export const PathEditor = () => {
         handleAfterLength: 75.60727431580094,
       },
       {
-        x: 66.367256442046,
-        y: 283.9020138713375,
+        x: 70.60188056528735,
+        y: 281.9479757820386,
         heading: 89.21231601882324,
         handleBeforeLength: 94.77980381865379,
         handleAfterLength: 18.81006583419939,
@@ -118,14 +118,19 @@ export const PathEditor = () => {
     ],
     angles: [
       {
-        afterWaypoint: 1,
-        t: 0.45400000000000035,
-        angle: Math.PI / 2,
+        afterWaypoint: 0,
+        t: 0,
+        angle: 1.5707963267948966,
       },
       {
         afterWaypoint: 1,
-        t: 0.8700000000000007,
-        angle: 3.1,
+        t: 0.3000000000000002,
+        angle: 1.593151592681121,
+      },
+      {
+        afterWaypoint: 1,
+        t: 0.9700000000000008,
+        angle: 0.9604979101111114,
       },
     ],
   })
@@ -144,7 +149,9 @@ export const PathEditor = () => {
   useEffect(() => {
     if (!uiCanvas.current) return
     const onPathChange = () => {
-      setTrajectory(computeTrajectory(path.current))
+      requestIdleCallback(() => {
+        setTrajectory(computeTrajectory(path.current))
+      })
     }
     const uiLayer = initUiCanvas(uiCanvas.current, path, onPathChange)
     layers.current.ui = uiLayer
