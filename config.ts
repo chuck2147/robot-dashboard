@@ -14,8 +14,8 @@ export const angularDecel = angularAccel
 
 export const curvatureVelocity = 5
 
-export const driveWidth = 26
-export const driveLength = 28
+export const driveWidth = 24
+export const driveLength = 26
 
 export const bumperWidth = 32
 export const bumperLength = 34

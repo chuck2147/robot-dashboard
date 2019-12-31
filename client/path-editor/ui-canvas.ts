@@ -189,12 +189,22 @@ export const initUiCanvas = (
       const cp2 = getBeforeHandle(bezierEnd)
       const heading =
         cubicBezierAngle(t, bezierStart, bezierEnd, cp1, cp2) * (180 / Math.PI)
+      // Each anglepoint gets assigned a new location based on the nearest point on the new path
+      const anglePointLocations = pathRef.current.angles.map(anglePoint => ({
+        angle: anglePoint.angle,
+        ...locateAnglePoint(anglePoint, pathRef.current),
+      }))
+      // Add waypoint
       pathRef.current.waypoints.splice(afterWaypoint + 1, 0, {
-        handleAfterLength: 15,
-        handleBeforeLength: 15,
+        handleAfterLength: 10,
+        handleBeforeLength: 10,
         heading,
         ...clickLocation,
       })
+      pathRef.current.angles = anglePointLocations.map(({ angle, x, y }) => ({
+        ...findNearestPointOnPath({ x, y }, pathRef.current),
+        angle,
+      }))
     }
     render()
   }
