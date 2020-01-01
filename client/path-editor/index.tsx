@@ -67,6 +67,8 @@ const fieldStyle = css`
   position: relative;
 
   & * {
+    /* Text selection was causing bugs with double clicking then dragging */
+    user-select: none;
     display: block;
     height: 100%;
     width: 100%;
@@ -91,6 +93,7 @@ export const PathEditor = () => {
   const uiCanvas = useRef<HTMLCanvasElement>()
   const animationCanvas = useRef<HTMLCanvasElement>()
   const layers = useRef<Layers>({})
+  const isUpdateQueued = useRef(false)
 
   const path = useRef<Path>({
     waypoints: [
@@ -154,8 +157,11 @@ export const PathEditor = () => {
   useEffect(() => {
     if (!uiCanvas.current) return
     const onPathChange = () => {
+      if (isUpdateQueued.current) return
+      isUpdateQueued.current = true
       requestIdleCallback(() => {
         setTrajectory(computeTrajectory(path.current))
+        isUpdateQueued.current = false
       })
     }
     const uiLayer = initUiCanvas(uiCanvas.current, path, onPathChange)

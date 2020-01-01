@@ -194,17 +194,19 @@ export const initUiCanvas = (
         angle: anglePoint.angle,
         ...locateAnglePoint(anglePoint, pathRef.current),
       }))
-      // Add waypoint
-      pathRef.current.waypoints.splice(afterWaypoint + 1, 0, {
-        handleAfterLength: 10,
-        handleBeforeLength: 10,
+      const newWaypoint = {
+        handleAfterLength: 30,
+        handleBeforeLength: 30,
         heading,
         ...clickLocation,
-      })
+      }
+      // Add waypoint
+      pathRef.current.waypoints.splice(afterWaypoint + 1, 0, newWaypoint)
       pathRef.current.angles = anglePointLocations.map(({ angle, x, y }) => ({
         ...findNearestPointOnPath({ x, y }, pathRef.current),
         angle,
       }))
+      focusedElement = newWaypoint
     }
     render()
   }
