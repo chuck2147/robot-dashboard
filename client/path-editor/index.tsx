@@ -160,8 +160,8 @@ export const PathEditor = () => {
       if (isUpdateQueued.current) return
       isUpdateQueued.current = true
       requestIdleCallback(() => {
-        setTrajectory(computeTrajectory(path.current))
         isUpdateQueued.current = false
+        setTrajectory(computeTrajectory(path.current))
       })
     }
     const uiLayer = initUiCanvas(uiCanvas.current, path, onPathChange)
