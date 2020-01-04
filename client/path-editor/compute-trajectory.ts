@@ -163,8 +163,8 @@ export const computeTrajectory = (path: Path): Trajectory => {
         if (
           beforePoint &&
           afterPoint &&
-          beforePoint.t < t &&
-          t < afterPoint.t
+          beforePoint.t <= t &&
+          t <= afterPoint.t
         ) {
           break
         }
@@ -179,11 +179,13 @@ export const computeTrajectory = (path: Path): Trajectory => {
     })
 
   const trajectoryWithAngles = trajectoryWithTime.map(point => {
+    // If it is before the first angle point, use the angle from the first angle point
     if (point.time <= anglePointsWithTime[0].time) {
       const angle = anglePointsWithTime[0].angle
       return { ...point, angle }
     }
     const lastAnglePoint = anglePointsWithTime[anglePointsWithTime.length - 1]
+    // If it is after the last angle point, use the angle from the last angle point
     if (point.time >= lastAnglePoint.time) {
       const angle = lastAnglePoint.angle
       return { ...point, angle }
@@ -193,7 +195,7 @@ export const computeTrajectory = (path: Path): Trajectory => {
       .reverse()
       .find(anglePoint => anglePoint.time < point.time)
     const anglePointAfter = anglePointsWithTime.find(
-      anglePoint => anglePoint.time > point.time,
+      anglePoint => anglePoint.time >= point.time,
     )
     if (!anglePointBefore || !anglePointAfter)
       throw new Error('could not find angle point before/after')

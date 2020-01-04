@@ -272,7 +272,7 @@ export const drawBumpers = (
   angle: number,
   color = transparentize(0.5, 'blue'),
 ) => {
-  const radius = 3
+  const radius = 4
   const width = bumperWidth
   const height = bumperLength
 
