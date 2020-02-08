@@ -1,6 +1,6 @@
 import { h } from 'preact'
 import { useRef, useEffect, useState } from 'preact/hooks'
-import fieldImage from '../../2018Field.png'
+import fieldImage from '../../2020Field.png'
 import { css } from 'linaria'
 import { lerp } from '../utils'
 import { initUiCanvas } from './ui-canvas'
@@ -9,8 +9,8 @@ import { initPathCanvas } from './path-canvas'
 import { computeTrajectory } from './compute-trajectory'
 import { initAnimationCanvas } from './animation-canvas'
 
-const fieldImageOriginalWidth = 1077
-const fieldImageOriginalHeight = 1063
+const fieldImageOriginalWidth = 1379
+const fieldImageOriginalHeight = 2641
 
 const canvasWidth = 2500
 const canvasHeight =
@@ -20,10 +20,10 @@ export { canvasHeight }
 
 // The numbers here are in terms of image pixels
 // Then they get multiplied to be converted to canvas width
-const fieldXMin = (87 / fieldImageOriginalWidth) * canvasWidth
-const fieldXMax = (986 / fieldImageOriginalWidth) * canvasWidth
-const fieldYMin = (0 / fieldImageOriginalWidth) * canvasWidth
-const fieldYMax = (1001 / fieldImageOriginalWidth) * canvasWidth
+const fieldXMin = (70 / fieldImageOriginalWidth) * canvasWidth
+const fieldXMax = (1309 / fieldImageOriginalWidth) * canvasWidth
+const fieldYMin = (119 / fieldImageOriginalWidth) * canvasWidth
+const fieldYMax = (2522 / fieldImageOriginalWidth) * canvasWidth
 
 const inches = 1
 const feet = 12 * inches
@@ -98,47 +98,30 @@ export const PathEditor = () => {
   const path = useRef<Path>({
     waypoints: [
       {
-        x: 269.9549546748031,
-        y: 19.12985277134063,
-        heading: 86.6196194041415,
+        x: 32.78232840591632,
+        y: 398.2459995429713,
+        heading: 20.676593203941724,
         handleBeforeLength: 13.391515777953243,
-        handleAfterLength: 82.86512469364033,
+        handleAfterLength: 188,
       },
       {
-        x: 271.5836562606652,
-        y: 215.51068074587704,
-        heading: 133.4884972524448,
-        handleBeforeLength: 47.092960427380426,
-        handleAfterLength: 69.57745560136352,
-      },
-      {
-        x: 71.90484183397699,
-        y: 281.29662975227234,
-        heading: 87.57999137158913,
-        handleBeforeLength: 92.57369849550282,
-        handleAfterLength: 18.81006583419939,
+        x: 295.85314555479226,
+        y: 393.54918958835026,
+        heading: 317.4949191199533,
+        handleBeforeLength: 114.69950953872045,
+        handleAfterLength: 32.678440785457795,
       },
     ],
     angles: [
       {
         afterWaypoint: 0,
-        t: 0,
-        angle: 1.5707963267948966,
+        t: 0.532,
+        angle: 1.63,
       },
       {
-        afterWaypoint: 1,
-        t: 0.1580000000000001,
-        angle: 1.3298706757934387,
-      },
-      {
-        afterWaypoint: 1,
-        t: 0.5260000000000004,
-        angle: 1.595798887763642,
-      },
-      {
-        afterWaypoint: 1,
-        t: 0.8540000000000006,
-        angle: 1.207290157450596,
+        afterWaypoint: 0,
+        t: 0.95,
+        angle: 1.9,
       },
     ],
   })
@@ -151,6 +134,7 @@ export const PathEditor = () => {
   }, [trajectory])
 
   useEffect(() => {
+    console.log(trajectory)
     stopAnimation()
   }, [trajectory])
 
