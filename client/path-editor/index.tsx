@@ -187,7 +187,7 @@ export const PathEditor = () => {
     layers.current.ui?.setDisplayMode(displayMode)
   }, [displayMode])
 
-  const pathLength = trajectory[trajectory.length - 1].time
+  const pathDuration = trajectory[trajectory.length - 1].time
 
   const [isPlaying, setIsPlaying] = useState(false)
   const playAnimation = () => {
@@ -212,7 +212,7 @@ export const PathEditor = () => {
         <canvas ref={uiCanvas} width={canvasWidth} height={canvasHeight} />
       </div>
       <div class={rightPanelStyle}>
-        <h1>{`${pathLength.toPrecision(4)}s`}</h1>
+        <h1>{`${pathDuration.toPrecision(4)}s`}</h1>
         <button onClick={isPlaying ? stopAnimation : playAnimation}>
           {isPlaying ? 'Stop' : 'Animate'}
         </button>
