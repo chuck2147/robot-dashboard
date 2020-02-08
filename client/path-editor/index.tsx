@@ -121,7 +121,7 @@ export const PathEditor = () => {
       {
         afterWaypoint: 0,
         t: 0.95,
-        angle: 1.9,
+        angle: 2.1,
       },
     ],
   })
