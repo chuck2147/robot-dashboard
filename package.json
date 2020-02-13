@@ -42,7 +42,8 @@
     "rollup": "^1.27.13",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-css-only": "^1.0.0",
-    "typescript": "3.7.3"
+    "typescript": "3.7.3",
+    "wpilib-nt-client": "^1.7.1"
   },
   "eslintConfig": {
     "extends": [

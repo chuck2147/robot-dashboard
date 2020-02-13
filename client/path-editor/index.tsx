@@ -1,4 +1,4 @@
-import { h } from 'preact'
+import { h, Fragment } from 'preact'
 import { useRef, useEffect, useState } from 'preact/hooks'
 import fieldImage from '../../2020Field.png'
 import { css } from 'linaria'
@@ -8,6 +8,7 @@ import { Path, DisplayMode } from '../types'
 import { initPathCanvas } from './path-canvas'
 import { computeTrajectory } from './compute-trajectory'
 import { initAnimationCanvas } from './animation-canvas'
+import { useNTValue } from '../nt'
 
 const fieldImageOriginalWidth = 1379
 const fieldImageOriginalHeight = 2641
@@ -91,6 +92,7 @@ interface Layers {
 export const PathEditor = () => {
   const pathCanvas = useRef<HTMLCanvasElement>()
   const uiCanvas = useRef<HTMLCanvasElement>()
+  const liveCanvas = useRef<HTMLCanvasElement>()
   const animationCanvas = useRef<HTMLCanvasElement>()
   const layers = useRef<Layers>({})
   const isUpdateQueued = useRef(false)
@@ -183,42 +185,67 @@ export const PathEditor = () => {
     setIsPlaying(false)
   }
 
+  const [isLive] = useNTValue('/SmartDashboard/autonomous/isLive', false)
+  const [dsTime] = useNTValue('/SmartDashboard/dsTime', 0)
+
+  const hide = { display: 'none' }
+  const hideIfLive = isLive ? hide : undefined
+  const showIfLive = isLive ? undefined : hide
+
   return (
     <div class={pathEditorStyle}>
       <div class={fieldStyle}>
-        <img src={fieldImage} alt="2018 field" class={imageStyle} />
+        <img src={fieldImage} alt="field" class={imageStyle} />
         <canvas ref={pathCanvas} width={canvasWidth} height={canvasHeight} />
         <canvas
           ref={animationCanvas}
           width={canvasWidth}
           height={canvasHeight}
+          style={hideIfLive}
         />
-        <canvas ref={uiCanvas} width={canvasWidth} height={canvasHeight} />
+        <canvas
+          ref={uiCanvas}
+          width={canvasWidth}
+          height={canvasHeight}
+          style={hideIfLive}
+        />
+        <canvas
+          ref={liveCanvas}
+          width={canvasWidth}
+          height={canvasHeight}
+          style={showIfLive}
+        />
       </div>
       <div class={rightPanelStyle}>
         <h1>{`${pathDuration.toPrecision(4)}s`}</h1>
-        <button onClick={isPlaying ? stopAnimation : playAnimation}>
-          {isPlaying ? 'Stop' : 'Animate'}
-        </button>
-        <button
-          style={{
-            background:
-              displayMode === DisplayMode.AnglePoints ? 'blue' : 'red',
-            border: 'none',
-            color: 'white',
-          }}
-          onClick={() =>
-            setDisplayMode(m =>
-              m === DisplayMode.AnglePoints
-                ? DisplayMode.Waypoints
-                : DisplayMode.AnglePoints,
-            )
-          }
-        >
-          {displayMode === DisplayMode.AnglePoints
-            ? 'Showing Angle Points'
-            : 'Showing Waypoints'}
-        </button>
+        <h1>{`Is Live: ${isLive}`}</h1>
+        <h1>{`Time: ${dsTime}`}</h1>
+        {!isLive && (
+          <Fragment>
+            <button onClick={isPlaying ? stopAnimation : playAnimation}>
+              {isPlaying ? 'Stop' : 'Animate'}
+            </button>
+            <button
+              style={{
+                background:
+                  displayMode === DisplayMode.AnglePoints ? 'blue' : 'red',
+                border: 'none',
+                color: 'white',
+              }}
+              onClick={() =>
+                setDisplayMode(m =>
+                  m === DisplayMode.AnglePoints
+                    ? DisplayMode.Waypoints
+                    : DisplayMode.AnglePoints,
+                )
+              }
+            >
+              {displayMode === DisplayMode.AnglePoints
+                ? 'Showing Angle Points'
+                : 'Showing Waypoints'}
+            </button>
+          </Fragment>
+        )}
       </div>
     </div>
   )
