@@ -26,6 +26,7 @@ declare global {
     receiveNTValue: (key: string, value: NTValue) => void
     sendNTValue: (key: string, value: NTValue) => void
     ntCache: typeof ntCache
+    connect: (address?: string) => Promise<void>
   }
 }
 
@@ -38,7 +39,6 @@ declare global {
 window.ntCache = ntCache
 
 window.receiveNTValue = (key: string, value: NTValue) => {
-  console.log('received value', key, value)
   ntCache[key] = value
   const matchingListeners = listeners[key] || []
   matchingListeners.forEach(l => l(value))
@@ -51,6 +51,8 @@ type UnLiteral<T> = T extends string
   : T extends boolean
   ? boolean
   : T
+
+export const connect = window.connect
 
 export const useNTValue = <T extends NTValue>(key: string, def?: T) => {
   const [value, setValue] = useState<T | undefined>(def)
@@ -68,5 +70,14 @@ export const useNTValue = <T extends NTValue>(key: string, def?: T) => {
     setValue(value)
   }
 
-  return [value, setNewValue] as [UnLiteral<T>, typeof setNewValue]
+  return [value, setNewValue] as const
+}
+
+export const useLivePoint = (key: string) => {
+  const [x] = useNTValue<number>(`${key}/x`)
+  const [y] = useNTValue<number>(`${key}/y`)
+  const [angle] = useNTValue<number>(`${key}/angle`)
+  return x !== undefined && y !== undefined && angle !== undefined
+    ? { x, y, angle }
+    : null
 }

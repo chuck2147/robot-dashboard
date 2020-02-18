@@ -20,10 +20,4 @@ export const globals = css`
 `
 
 const root = document.querySelector('#root')
-if (root)
-  render(
-    <div>
-      <PathEditor />
-    </div>,
-    root,
-  )
+if (root) render(<PathEditor />, root)

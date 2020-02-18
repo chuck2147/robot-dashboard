@@ -18,9 +18,7 @@ import {
   locateAnglePoint,
   findNearestPointOnPath,
   cubicBezierAngle,
-  drawBumpers,
 } from '../utils'
-import { bezierDivisions } from '../../config'
 
 const anglePointRadius = 15
 
@@ -31,7 +29,7 @@ const isWaypoint = (
 
 export const initUiCanvas = (
   canvas: HTMLCanvasElement,
-  pathRef: Ref<Path>,
+  pathRef: Ref<Path | null>,
   onChange: () => void,
 ) => {
   const ctx = canvas.getContext('2d')
@@ -79,9 +77,11 @@ export const initUiCanvas = (
   const clickThreshold = 5
 
   const mouseDownListener = (e: MouseEvent) => {
+    if (!pathRef.current) return
+    const path = pathRef.current
     const clickLocation = getPointFromEvent(e)
     if (displayMode === DisplayMode.Waypoints) {
-      const matchingWaypoint = pathRef.current.waypoints.find(
+      const matchingWaypoint = path.waypoints.find(
         p => distanceBetween(p, clickLocation) < clickThreshold,
       )
       if (matchingWaypoint) {
@@ -108,7 +108,7 @@ export const initUiCanvas = (
       }
     } else {
       const matchingAnglePoint = pathRef.current.angles.find(anglePoint => {
-        const point = locateAnglePoint(anglePoint, pathRef.current)
+        const point = locateAnglePoint(anglePoint, path)
         const dist = distanceBetween(point, clickLocation)
         if (dist < clickThreshold) activeElement = 'anglepoint'
         else activeElement = 'anglehandle'
@@ -116,7 +116,7 @@ export const initUiCanvas = (
       })
       if (matchingAnglePoint) {
         focusedElement = matchingAnglePoint
-        const anglePoint = locateAnglePoint(matchingAnglePoint, pathRef.current)
+        const anglePoint = locateAnglePoint(matchingAnglePoint, path)
         if (activeElement === 'anglehandle') {
           const deltaY = clickLocation.y - anglePoint.y
           const deltaX = clickLocation.x - anglePoint.x
@@ -136,18 +136,17 @@ export const initUiCanvas = (
   }
   const mouseMoveListener = (e: MouseEvent) => {
     if (!focusedElement || !activeElement) return
+    const path = pathRef.current
+    if (!path) return
     const mouseLocation = getPointFromEvent(e)
     if (activeElement === 'waypoint') {
       Object.assign(focusedElement, mouseLocation)
     } else if (activeElement === 'anglepoint') {
       if (isWaypoint(focusedElement)) return
-      Object.assign(
-        focusedElement,
-        findNearestPointOnPath(mouseLocation, pathRef.current),
-      )
+      Object.assign(focusedElement, findNearestPointOnPath(mouseLocation, path))
     } else if (activeElement === 'anglehandle') {
       if (isWaypoint(focusedElement)) return
-      const anglePoint = locateAnglePoint(focusedElement, pathRef.current)
+      const anglePoint = locateAnglePoint(focusedElement, path)
       const deltaY = mouseLocation.y - anglePoint.y
       const deltaX = mouseLocation.x - anglePoint.x
       focusedElement.angle = Math.atan2(deltaY, deltaX)
@@ -172,27 +171,26 @@ export const initUiCanvas = (
 
   const doubleClickListener = (e: MouseEvent) => {
     const clickLocation = getPointFromEvent(e)
+    const path = pathRef.current
+    if (!path) return
 
     if (displayMode === DisplayMode.AnglePoints) {
-      pathRef.current.angles.push({
-        ...findNearestPointOnPath(clickLocation, pathRef.current),
+      path.angles.push({
+        ...findNearestPointOnPath(clickLocation, path),
         angle: Math.PI / 2,
       })
     } else {
-      const { afterWaypoint, t } = findNearestPointOnPath(
-        clickLocation,
-        pathRef.current,
-      )
-      const bezierStart = pathRef.current.waypoints[afterWaypoint]
-      const bezierEnd = pathRef.current.waypoints[afterWaypoint + 1]
+      const { afterWaypoint, t } = findNearestPointOnPath(clickLocation, path)
+      const bezierStart = path.waypoints[afterWaypoint]
+      const bezierEnd = path.waypoints[afterWaypoint + 1]
       const cp1 = getAfterHandle(bezierStart)
       const cp2 = getBeforeHandle(bezierEnd)
       const heading =
         cubicBezierAngle(t, bezierStart, bezierEnd, cp1, cp2) * (180 / Math.PI)
       // Each anglepoint gets assigned a new location based on the nearest point on the new path
-      const anglePointLocations = pathRef.current.angles.map(anglePoint => ({
+      const anglePointLocations = path.angles.map(anglePoint => ({
         angle: anglePoint.angle,
-        ...locateAnglePoint(anglePoint, pathRef.current),
+        ...locateAnglePoint(anglePoint, path),
       }))
       const newWaypoint = {
         handleAfterLength: 30,
@@ -201,9 +199,9 @@ export const initUiCanvas = (
         ...clickLocation,
       }
       // Add waypoint
-      pathRef.current.waypoints.splice(afterWaypoint + 1, 0, newWaypoint)
-      pathRef.current.angles = anglePointLocations.map(({ angle, x, y }) => ({
-        ...findNearestPointOnPath({ x, y }, pathRef.current),
+      path.waypoints.splice(afterWaypoint + 1, 0, newWaypoint)
+      path.angles = anglePointLocations.map(({ angle, x, y }) => ({
+        ...findNearestPointOnPath({ x, y }, path),
         angle,
       }))
       focusedElement = newWaypoint
@@ -212,25 +210,25 @@ export const initUiCanvas = (
   }
 
   const keyListener = (e: KeyboardEvent) => {
+    const path = pathRef.current
+    if (!path) return
     if (e.key === 'Delete' && focusedElement) {
       if (isWaypoint(focusedElement)) {
         // Delete focused waypoint
         // Each anglepoint gets assigned a new location based on the nearest point on the new path
-        const anglePointLocations = pathRef.current.angles.map(anglePoint => ({
+        const anglePointLocations = path.angles.map(anglePoint => ({
           angle: anglePoint.angle,
-          ...locateAnglePoint(anglePoint, pathRef.current),
+          ...locateAnglePoint(anglePoint, path),
         }))
-        pathRef.current.waypoints = pathRef.current.waypoints.filter(
-          p => p !== focusedElement,
-        )
-        pathRef.current.angles = anglePointLocations.map(({ angle, x, y }) => ({
-          ...findNearestPointOnPath({ x, y }, pathRef.current),
+        path.waypoints = path.waypoints.filter(p => p !== focusedElement)
+        path.angles = anglePointLocations.map(({ angle, x, y }) => ({
+          ...findNearestPointOnPath({ x, y }, path),
           angle,
         }))
         render()
       } else {
         // Delete focused anglepoint
-        pathRef.current.angles = pathRef.current.angles.filter(
+        path.angles = path.angles.filter(
           anglePoint => anglePoint !== focusedElement,
         )
         render()
@@ -257,6 +255,7 @@ export const initUiCanvas = (
     onChange()
     clear()
     const path = pathRef.current
+    if (!path) return
 
     path.waypoints.forEach(waypoint => {
       const isFocused = waypoint === focusedElement

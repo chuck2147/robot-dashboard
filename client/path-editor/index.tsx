@@ -1,5 +1,5 @@
-import { h, Fragment } from 'preact'
-import { useRef, useEffect, useState } from 'preact/hooks'
+import { h, Fragment, JSX } from 'preact'
+import { useRef, useEffect, useState, useCallback } from 'preact/hooks'
 import fieldImage from '../../2020Field.png'
 import { css } from 'linaria'
 import { lerp } from '../utils'
@@ -8,7 +8,20 @@ import { Path, DisplayMode } from '../types'
 import { initPathCanvas } from './path-canvas'
 import { computeTrajectory } from './compute-trajectory'
 import { initAnimationCanvas } from './animation-canvas'
-import { useNTValue } from '../nt'
+import { useNTValue, connect, useLivePoint } from '../nt'
+import { useConfState } from './use-conf-state'
+import { initLiveCanvas } from './live-canvas'
+
+declare global {
+  interface Window {
+    savePaths(
+      folderPath: string,
+      trajectories: string,
+      paths: string,
+    ): Promise<void>
+    readPaths(folderPath: string): Promise<string>
+  }
+}
 
 const fieldImageOriginalWidth = 1379
 const fieldImageOriginalHeight = 2641
@@ -87,69 +100,70 @@ interface Layers {
   ui?: ReturnType<typeof initUiCanvas>
   path?: ReturnType<typeof initPathCanvas>
   animation?: ReturnType<typeof initAnimationCanvas>
+  live?: ReturnType<typeof initLiveCanvas>
 }
 
 export const PathEditor = () => {
+  const [isSaving, setIsSaving] = useState(false)
   const pathCanvas = useRef<HTMLCanvasElement>()
   const uiCanvas = useRef<HTMLCanvasElement>()
   const liveCanvas = useRef<HTMLCanvasElement>()
   const animationCanvas = useRef<HTMLCanvasElement>()
   const layers = useRef<Layers>({})
   const isUpdateQueued = useRef(false)
+  const [robotIp, setRobotIp] = useConfState<string | undefined>(
+    'robotIp',
+    'roborio-2147-frc.local',
+  )
+  const [jsonFolder, setJsonFolder] = useConfState<string | undefined>(
+    'jsonFolder',
+    '/foo/bar/src/main/deploy',
+  )
+  const [isConnected, setIsConnected] = useState(false)
+  const [pathName, setPathName] = useState<string | null>(null)
 
-  const path = useRef<Path>({
-    waypoints: [
-      {
-        x: 32.78232840591632,
-        y: 398.2459995429713,
-        heading: 20.676593203941724,
-        handleBeforeLength: 13.391515777953243,
-        handleAfterLength: 188,
-      },
-      {
-        x: 295.85314555479226,
-        y: 393.54918958835026,
-        heading: 317.4949191199533,
-        handleBeforeLength: 114.69950953872045,
-        handleAfterLength: 32.678440785457795,
-      },
-    ],
-    angles: [
-      {
-        afterWaypoint: 0,
-        t: 0.532,
-        angle: 1.63,
-      },
-      {
-        afterWaypoint: 0,
-        t: 0.95,
-        angle: 2.1,
-      },
-    ],
-  })
+  useEffect(() => {
+    connect(robotIp)
+      .then(() => setIsConnected(true))
+      .catch(() => setIsConnected(false))
+  }, [robotIp])
 
-  const [trajectory, setTrajectory] = useState(computeTrajectory(path.current))
+  const paths = useRef<{ [key: string]: Path }>({})
+
+  const path = useRef<Path | null>(null)
+
+  const [trajectory, setTrajectory] = useState(
+    path.current ? computeTrajectory(path.current) : null,
+  )
   const [displayMode, setDisplayMode] = useState(DisplayMode.Waypoints)
 
   useEffect(() => {
     layers.current.path?.render(trajectory)
   }, [trajectory])
 
+  useEffect(() => stopAnimation(), [trajectory])
+
+  const onPathChange = () => {
+    if (isUpdateQueued.current) return
+    isUpdateQueued.current = true
+    requestIdleCallback(() => {
+      isUpdateQueued.current = false
+      setTrajectory(path.current ? computeTrajectory(path.current) : null)
+    })
+  }
+
+  const setPath = useCallback((pathName: string | null) => {
+    if (pathName) path.current = paths.current[pathName]
+    layers.current.ui?.render()
+    onPathChange()
+  }, [])
+
   useEffect(() => {
-    console.log(trajectory)
-    stopAnimation()
-  }, [trajectory])
+    setPath(pathName)
+  }, [pathName, setPath])
 
   useEffect(() => {
     if (!uiCanvas.current) return
-    const onPathChange = () => {
-      if (isUpdateQueued.current) return
-      isUpdateQueued.current = true
-      requestIdleCallback(() => {
-        isUpdateQueued.current = false
-        setTrajectory(computeTrajectory(path.current))
-      })
-    }
     const uiLayer = initUiCanvas(uiCanvas.current, path, onPathChange)
     layers.current.ui = uiLayer
     return () => uiLayer?.destroy()
@@ -170,13 +184,21 @@ export const PathEditor = () => {
   }, [])
 
   useEffect(() => {
+    if (!liveCanvas.current) return
+    const liveLayer = initLiveCanvas(liveCanvas.current)
+    layers.current.live = liveLayer
+    return () => liveLayer?.destroy()
+  })
+
+  useEffect(() => {
     layers.current.ui?.setDisplayMode(displayMode)
   }, [displayMode])
 
-  const pathDuration = trajectory[trajectory.length - 1].time
+  const pathDuration = trajectory && trajectory[trajectory.length - 1].time
 
   const [isPlaying, setIsPlaying] = useState(false)
   const playAnimation = () => {
+    if (!trajectory) return
     layers.current.animation?.play(trajectory)
     setIsPlaying(true)
   }
@@ -185,12 +207,120 @@ export const PathEditor = () => {
     setIsPlaying(false)
   }
 
-  const [isLive] = useNTValue('/SmartDashboard/autonomous/isLive', false)
-  const [dsTime] = useNTValue('/SmartDashboard/dsTime', 0)
+  const [livePathName] = useNTValue<string | false>(
+    '/pathFollowing/currentPath',
+  )
+
+  useEffect(() => {
+    if (livePathName) layers.current.animation?.stop()
+  }, [livePathName])
+
+  const livePathCurrentPoint = useLivePoint('/pathFollowing/current')
+  const livePathTargetPoint = useLivePoint('/pathFollowing/target')
+
+  useEffect(() => {
+    if (livePathCurrentPoint && livePathTargetPoint) {
+      layers.current.live?.render(livePathTargetPoint, livePathCurrentPoint)
+    } else {
+      layers.current.live?.clear()
+    }
+  }, [livePathCurrentPoint, livePathTargetPoint])
+
+  useEffect(() => {
+    // If there is a live path, render it, otherwise render the user-selected path
+    setPath(livePathName || pathName)
+  }, [livePathName, pathName, setPath])
+
+  const newPath = () => {
+    const name = 'New Path'
+    paths.current[name] = {
+      waypoints: [
+        {
+          x: 10,
+          y: 10,
+          heading: 0,
+          handleBeforeLength: 20,
+          handleAfterLength: 20,
+        },
+        {
+          x: 100,
+          y: 100,
+          heading: 0,
+          handleBeforeLength: 20,
+          handleAfterLength: 20,
+        },
+      ],
+      angles: [
+        {
+          afterWaypoint: 0,
+          t: 0.1,
+          angle: Math.PI / 2,
+        },
+        {
+          afterWaypoint: 0,
+          t: 0.9,
+          angle: Math.PI / 2,
+        },
+      ],
+    }
+    setPathName(name)
+  }
+
+  const deletePathByName = (name: string) => {
+    paths.current = Object.fromEntries(
+      Object.entries(paths.current).filter(([key]) => key !== name),
+    )
+  }
+
+  const deletePath = () => {
+    if (!pathName) return
+    deletePathByName(pathName)
+    setPathName(Object.keys(paths.current)[0])
+  }
+
+  const renamePath: JSX.GenericEventHandler<HTMLInputElement> = e => {
+    const newName = e.currentTarget.value
+    if (!pathName || !newName) return
+    paths.current[newName] = paths.current[pathName]
+    deletePathByName(pathName)
+    setPathName(newName)
+  }
+
+  const loadPaths = useCallback(() => {
+    if (!jsonFolder) return
+    window.readPaths(jsonFolder).then(json => {
+      paths.current = JSON.parse(json)
+      setPathName(Object.keys(paths.current)[0])
+    })
+  }, [jsonFolder])
+
+  useEffect(() => {
+    // If there are no paths, load paths
+    if (Object.keys(paths.current).length === 0) loadPaths()
+  }, [jsonFolder, loadPaths])
+
+  const savePaths = () => {
+    setIsSaving(true)
+    if (!jsonFolder) return
+    const trajectories = Object.entries(paths.current).map(
+      ([pathName, path]) => {
+        const trajectory = computeTrajectory(path)
+        return { name: pathName, points: trajectory }
+      },
+    )
+
+    window
+      .savePaths(
+        jsonFolder,
+        JSON.stringify(trajectories),
+        JSON.stringify(paths.current, null, 2),
+      )
+      .finally(() => setIsSaving(false))
+  }
 
   const hide = { display: 'none' }
-  const hideIfLive = isLive ? hide : undefined
-  const showIfLive = isLive ? undefined : hide
+  const hideIfLive = livePathName ? hide : undefined
+  const showIfLive = livePathName ? undefined : hide
 
   return (
     <div class={pathEditorStyle}>
@@ -217,14 +347,50 @@ export const PathEditor = () => {
         />
       </div>
       <div class={rightPanelStyle}>
-        <h1>{`${pathDuration.toPrecision(4)}s`}</h1>
-        <h1>{`Is Live: ${isLive}`}</h1>
-        <h1>{`Time: ${dsTime}`}</h1>
-        {!isLive && (
+        {pathDuration && <h1>{`${pathDuration.toPrecision(4)}s`}</h1>}
+        {livePathName && <h1>{`Live Path: ${livePathName}`}</h1>}
+        <h1>{`Connected: ${isConnected}`}</h1>
+        <input
+          type="text"
+          onChange={e => setRobotIp(e.currentTarget.value)}
+          value={robotIp}
+        />
+        {!livePathName && (
           <Fragment>
-            <button onClick={isPlaying ? stopAnimation : playAnimation}>
-              {isPlaying ? 'Stop' : 'Animate'}
-            </button>
+            <input
+              type="text"
+              onChange={e => setJsonFolder(e.currentTarget.value)}
+              value={jsonFolder}
+            />
+            <button onClick={loadPaths}>Load Paths</button>
+            <button onClick={newPath}>New Path</button>
+            {pathName && <button onClick={deletePath}>Delete Path</button>}
+            {pathName && (
+              <button onClick={savePaths} disabled={isSaving}>
+                {isSaving ? 'Saving Paths...' : 'Save Paths'}
+              </button>
+            )}
+            {pathName && (
+              // eslint-disable-next-line caleb/jsx-a11y/no-onchange
+              <select
+                onChange={e => setPathName(e.currentTarget.value)}
+                value={pathName || ''}
+              >
+                {Object.keys(paths.current).map(pathName => (
+                  <option value={pathName} key={pathName}>
+                    {pathName}
+                  </option>
+                ))}
+              </select>
+            )}
+            {pathName && (
+              <input type="text" value={pathName || ''} onInput={renamePath} />
+            )}
+            {pathName && (
+              <button onClick={isPlaying ? stopAnimation : playAnimation}>
+                {isPlaying ? 'Stop' : 'Animate'}
+              </button>
+            )}
             <button
               style={{
                 background:

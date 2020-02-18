@@ -11,7 +11,7 @@ export default {
     'client/index': 'client/index.tsx',
     'server/index': 'server/index.ts',
   },
-  external: ['carlo', 'wpilib-nt-client'],
+  external: ['carlo', 'wpilib-nt-client', 'conf'],
   plugins: [
     node({ extensions }),
     linaria({ sourceMap: false }),

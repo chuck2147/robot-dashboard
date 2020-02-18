@@ -33,8 +33,10 @@ export const initPathCanvas = (canvas: HTMLCanvasElement) => {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
   }
 
-  const render = (trajectory: Trajectory) => {
+  const render = (trajectory: Trajectory | null) => {
     clear()
+
+    if (!trajectory) return
 
     const opacity = 0.992 - 6 / bezierDivisions
     const transparent = transparentize(opacity)

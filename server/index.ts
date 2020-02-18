@@ -3,6 +3,15 @@
 
 import carlo from 'carlo'
 import wpilibNtClient from 'wpilib-nt-client'
+import Conf from 'conf'
+import { promisify } from 'util'
+import { writeFile, readFile } from 'fs'
+import { join } from 'path'
+
+const writeFileAsync = promisify(writeFile)
+const readFileAsync = promisify(readFile)
+
+const config = new Conf()
 
 const nt = new wpilibNtClient.Client()
 
@@ -66,7 +75,7 @@ const main = async () => {
       }, address)
     })
 
-  await app.exposeFunction('connect', address => connect(address as string))
+  await app.exposeFunction('connect', (address?: string) => connect(address))
   await app.exposeFunction('sendNTValue', (key, value) => {
     nt.Assign(value, key as string)
   })
@@ -74,6 +83,26 @@ const main = async () => {
     lastTimeValueReceived = new Date()
     sendValue(key, val)
   })
+
+  await app.exposeFunction(
+    'saveConfValue',
+    (key: string, value: string | number | boolean) => {
+      config.set(key, value)
+    },
+  )
+  await app.exposeFunction('readConfValue', (key: string) => config.get(key))
+  await app.exposeFunction(
+    'savePaths',
+    (folderPath: string, trajectories: string, paths: string) => {
+      Promise.all([
+        writeFileAsync(join(folderPath, 'paths.json'), paths),
+        writeFileAsync(join(folderPath, 'trajectories.json'), trajectories),
+      ])
+    },
+  )
+  await app.exposeFunction('readPaths', (folderPath: string) =>
+    readFileAsync(join(folderPath, 'paths.json'), 'utf8').catch(() => '{}'),
+  )
 
   await app.load('index.html')
   await connect('localhost')

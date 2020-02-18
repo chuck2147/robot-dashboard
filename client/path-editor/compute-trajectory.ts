@@ -40,7 +40,10 @@ const maxAccel = originalMaxAccel * 12
 /** in/s */
 const maxDecel = originalMaxDecel * 12
 
-type TrajectoryPointWithoutTime = Omit<TrajectoryPoint, 'time' | 'angle'>
+type TrajectoryPointWithoutTime = Omit<
+  TrajectoryPoint,
+  'time' | 'angle' | 'angularVelocity'
+>
 type TrajectoryWithoutTime = TrajectoryPointWithoutTime[]
 
 const smoothTrajectory = (
@@ -182,13 +185,13 @@ export const computeTrajectory = (path: Path): Trajectory => {
     // If it is before the first angle point, use the angle from the first angle point
     if (point.time <= anglePointsWithTime[0].time) {
       const angle = anglePointsWithTime[0].angle
-      return { ...point, angle }
+      return { ...point, angle, angularVelocity: 0 }
     }
     const lastAnglePoint = anglePointsWithTime[anglePointsWithTime.length - 1]
     // If it is after the last angle point, use the angle from the last angle point
     if (point.time >= lastAnglePoint.time) {
       const angle = lastAnglePoint.angle
-      return { ...point, angle }
+      return { ...point, angle, angularVelocity: 0 }
     }
     const anglePointBefore = anglePointsWithTime
       .slice()
