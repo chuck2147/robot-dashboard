@@ -219,11 +219,7 @@ export const PathEditor = () => {
   const livePathTargetPoint = useLivePoint('/pathFollowing/target')
 
   useEffect(() => {
-    if (livePathCurrentPoint && livePathTargetPoint) {
-      layers.current.live?.render(livePathTargetPoint, livePathCurrentPoint)
-    } else {
-      layers.current.live?.clear()
-    }
+    layers.current.live?.render(livePathTargetPoint, livePathCurrentPoint)
   }, [livePathCurrentPoint, livePathTargetPoint])
 
   useEffect(() => {
@@ -320,7 +316,6 @@ export const PathEditor = () => {
 
   const hide = { display: 'none' }
   const hideIfLive = livePathName ? hide : undefined
-  const showIfLive = livePathName ? undefined : hide
 
   return (
     <div class={pathEditorStyle}>
@@ -339,12 +334,7 @@ export const PathEditor = () => {
           height={canvasHeight}
           style={hideIfLive}
         />
-        <canvas
-          ref={liveCanvas}
-          width={canvasWidth}
-          height={canvasHeight}
-          style={showIfLive}
-        />
+        <canvas ref={liveCanvas} width={canvasWidth} height={canvasHeight} />
       </div>
       <div class={rightPanelStyle}>
         {pathDuration && <h1>{`${pathDuration.toPrecision(4)}s`}</h1>}

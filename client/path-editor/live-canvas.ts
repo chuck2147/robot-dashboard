@@ -10,12 +10,12 @@ export const initLiveCanvas = (canvas: HTMLCanvasElement) => {
   }
 
   const render = (
-    target: LiveTrajectoryPoint,
-    current: LiveTrajectoryPoint,
+    current?: LiveTrajectoryPoint | null,
+    target?: LiveTrajectoryPoint | null,
   ) => {
     clear()
-    drawBumpers(ctx, target, target.angle, 'green')
-    drawBumpers(ctx, current, current.angle, 'red')
+    if (target) drawBumpers(ctx, target, target.angle, 'green')
+    if (current) drawBumpers(ctx, current, current.angle, 'red')
   }
 
   const destroy = () => {
