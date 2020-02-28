@@ -328,13 +328,13 @@ export const PathEditor = () => {
           height={canvasHeight}
           style={hideIfLive}
         />
+        <canvas ref={liveCanvas} width={canvasWidth} height={canvasHeight} />
         <canvas
           ref={uiCanvas}
           width={canvasWidth}
           height={canvasHeight}
           style={hideIfLive}
         />
-        <canvas ref={liveCanvas} width={canvasWidth} height={canvasHeight} />
       </div>
       <div class={rightPanelStyle}>
         {pathDuration && <h1>{`${pathDuration.toPrecision(4)}s`}</h1>}
