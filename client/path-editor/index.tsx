@@ -207,9 +207,7 @@ export const PathEditor = () => {
     setIsPlaying(false)
   }
 
-  const [livePathName] = useNTValue<string | false>(
-    '/pathFollowing/currentPath',
-  )
+  const [livePathName] = useNTValue<string>('/pathFollowing/currentPath')
 
   useEffect(() => {
     if (livePathName) layers.current.animation?.stop()
