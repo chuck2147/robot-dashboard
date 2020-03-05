@@ -75,7 +75,7 @@ export const initUiCanvas = (
 
   let displayMode = DisplayMode.Waypoints
 
-  const clickThreshold = 5
+  const clickThreshold = 8
 
   const mouseDownListener = (e: MouseEvent) => {
     if (!pathRef.current) return
@@ -111,9 +111,13 @@ export const initUiCanvas = (
       const matchingAnglePoint = pathRef.current.angles.find(anglePoint => {
         const point = locateAnglePoint(anglePoint, path)
         const dist = distanceBetween(point, clickLocation)
-        if (dist < clickThreshold) activeElement = 'anglepoint'
-        else activeElement = 'anglehandle'
-        return dist < anglePointRadius
+        if (dist < clickThreshold) {
+          activeElement = 'anglepoint'
+          return true
+        } else if (dist < anglePointRadius) {
+          activeElement = 'anglehandle'
+          return true
+        }
       })
       if (matchingAnglePoint) {
         focusedElement = matchingAnglePoint
@@ -270,11 +274,11 @@ export const initUiCanvas = (
         const beforeHandle = getBeforeHandle(waypoint)
         const afterHandle = getAfterHandle(waypoint)
 
-        line(beforeHandle, afterHandle, 'rgba(0,0,0,0.3)')
+        line(beforeHandle, afterHandle, 'rgba(0,0,0,0.3)', 1)
 
         // Handle dots
-        circle(beforeHandle, 'green', 2)
-        circle(afterHandle, 'green', 2)
+        circle(beforeHandle, 'green', 4)
+        circle(afterHandle, 'green', 4)
       }
 
       const waypointColor = 'red'
@@ -285,7 +289,7 @@ export const initUiCanvas = (
         displayMode === DisplayMode.Waypoints
           ? color
           : transparentize(0.7, color),
-        3,
+        displayMode === DisplayMode.Waypoints ? 5 : 3,
       )
     })
 
@@ -315,7 +319,11 @@ export const initUiCanvas = (
         circle(point, transparentize(0.9, color), anglePointRadius * 2)
       }
 
-      circle(point, colorWithOpacity, 3)
+      circle(
+        point,
+        colorWithOpacity,
+        displayMode === DisplayMode.AnglePoints ? 5 : 3,
+      )
     })
 
     // Draw bumpers if you are dragging the first or last waypoint
