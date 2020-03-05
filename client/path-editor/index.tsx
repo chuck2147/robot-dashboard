@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 import { h, Fragment, JSX } from 'preact'
 import { useRef, useEffect, useState, useCallback } from 'preact/hooks'
 import fieldImage from '../../2020Field.png'
@@ -11,6 +12,7 @@ import { initAnimationCanvas } from './animation-canvas'
 import { useNTValue, connect, useLivePoint } from '../nt'
 import { useConfState } from './use-conf-state'
 import { initLiveCanvas } from './live-canvas'
+import { maxVelocity as globalMaxVelocity } from '../../config'
 
 declare global {
   interface Window {
@@ -312,6 +314,18 @@ export const PathEditor = () => {
       .finally(() => setIsSaving(false))
   }
 
+  const setMaxVelocity = (newMaxVelocity: number | null) => {
+    if (!path.current) return
+    if (newMaxVelocity === null) {
+      delete path.current.maxVelocity
+    } else {
+      path.current.maxVelocity = newMaxVelocity
+    }
+
+    layers.current.ui?.render()
+    onPathChange()
+  }
+
   const hide = { display: 'none' }
   const hideIfLive = livePathName ? hide : undefined
 
@@ -399,6 +413,28 @@ export const PathEditor = () => {
                 ? 'Showing Angle Points'
                 : 'Showing Waypoints'}
             </button>
+            {path.current?.maxVelocity ? (
+              <Fragment>
+                <label>
+                  <span>Max Speed (ft/s)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={globalMaxVelocity}
+                    step={0.5}
+                    value={path.current.maxVelocity}
+                    onInput={e => setMaxVelocity(Number(e.currentTarget.value))}
+                  />
+                </label>
+                <button onClick={() => setMaxVelocity(null)}>
+                  Un-Override Max Speed For Path
+                </button>
+              </Fragment>
+            ) : (
+              <button onClick={() => setMaxVelocity(globalMaxVelocity)}>
+                Override Max Speed For Path
+              </button>
+            )}
           </Fragment>
         )}
       </div>
