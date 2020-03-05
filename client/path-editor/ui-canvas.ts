@@ -216,6 +216,8 @@ export const initUiCanvas = (
     if (!path) return
     if (focusedElement && (e.key === 'Delete' || e.key === 'Backspace')) {
       if (isWaypoint(focusedElement)) {
+        // Must have a start and end, can't delete either of those
+        if (path.waypoints.length <= 2) return
         // Delete focused waypoint
         // Each anglepoint gets assigned a new location based on the nearest point on the new path
         const anglePointLocations = path.angles.map(anglePoint => ({
@@ -229,6 +231,8 @@ export const initUiCanvas = (
         }))
         render()
       } else {
+        // Must have at least one angle for the path
+        if (path.angles.length <= 1) return
         // Delete focused anglepoint
         path.angles = path.angles.filter(
           anglePoint => anglePoint !== focusedElement,
