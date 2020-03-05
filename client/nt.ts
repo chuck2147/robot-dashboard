@@ -77,7 +77,6 @@ export const useNTValue = <T extends NTValue>(key: string, def?: T) => {
 
 export const useLivePoint = (key: string) => {
   const [x] = useNTValue<number>(`${key}/x`)
-  console.log('got x', x)
   const [y] = useNTValue<number>(`${key}/y`)
   const [angle] = useNTValue<number>(`${key}/angle`)
   return x !== undefined && y !== undefined && angle !== undefined

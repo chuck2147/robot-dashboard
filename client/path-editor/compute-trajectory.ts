@@ -170,12 +170,17 @@ export const computeTrajectory = (path: Path): Trajectory => {
           break
         }
       }
-      const time = lerp(
-        beforePoint.t,
-        afterPoint.t,
-        beforePoint.time,
-        afterPoint.time,
-      )(t)
+      const time =
+        beforePoint && afterPoint
+          ? lerp(
+              beforePoint.t,
+              afterPoint.t,
+              beforePoint.time,
+              afterPoint.time,
+            )(t)
+          : // If the point is not between two points, just use one of them
+            // This happens when the point is on the start or end of the path
+            (beforePoint || afterPoint).time
       return { ...anglePoint, time }
     })
 
