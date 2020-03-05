@@ -13,6 +13,7 @@ import { useNTValue, connect, useLivePoint } from '../nt'
 import { useConfState } from './use-conf-state'
 import { initLiveCanvas } from './live-canvas'
 import { maxVelocity as globalMaxVelocity } from '../../config'
+import { SendableChooser } from '../sendable-chooser'
 
 declare global {
   interface Window {
@@ -434,6 +435,7 @@ export const PathEditor = () => {
             )}
           </Fragment>
         )}
+        <SendableChooser ntKey="/SmartDashboard/Auto Selector" />
       </div>
     </div>
   )
