@@ -26,16 +26,18 @@ declare global {
     receiveNTValue: (key: string, value: NTValue) => void
     sendNTValue: (key: string, value: NTValue) => void
     ntCache: typeof ntCache
+    flushNT: () => void
     connect: (address?: string) => Promise<void>
   }
 }
 
-// const flushNT = () => {
-//   Object.values(listeners).forEach(valListeners => {
-//     valListeners.forEach(listener => listener(undefined))
-//   })
-// }
+const flushNT = () => {
+  Object.values(listeners).forEach(valListeners => {
+    valListeners.forEach(listener => listener(undefined))
+  })
+}
 
+window.flushNT = flushNT
 window.ntCache = ntCache
 
 window.receiveNTValue = (key: string, value: NTValue) => {
@@ -75,6 +77,7 @@ export const useNTValue = <T extends NTValue>(key: string, def?: T) => {
 
 export const useLivePoint = (key: string) => {
   const [x] = useNTValue<number>(`${key}/x`)
+  console.log('got x', x)
   const [y] = useNTValue<number>(`${key}/y`)
   const [angle] = useNTValue<number>(`${key}/angle`)
   return x !== undefined && y !== undefined && angle !== undefined

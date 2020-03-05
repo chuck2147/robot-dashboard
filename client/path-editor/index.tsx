@@ -121,13 +121,10 @@ export const PathEditor = () => {
     'jsonFolder',
     '/foo/bar/src/main/deploy',
   )
-  const [isConnected, setIsConnected] = useState(false)
   const [pathName, setPathName] = useState<string | null>(null)
 
   useEffect(() => {
     connect(robotIp)
-      .then(() => setIsConnected(true))
-      .catch(() => setIsConnected(false))
   }, [robotIp])
 
   const paths = useRef<{ [key: string]: Path }>({})
@@ -155,7 +152,7 @@ export const PathEditor = () => {
   }
 
   const setPath = useCallback((pathName: string | null) => {
-    if (pathName) path.current = paths.current[pathName]
+    if (pathName) path.current = paths.current[pathName] || null
     layers.current.ui?.render()
     onPathChange()
   }, [])
@@ -352,7 +349,7 @@ export const PathEditor = () => {
         <button onClick={() => window.location.reload()}>Reload</button>
         {pathDuration && <h1>{`${pathDuration.toPrecision(4)}s`}</h1>}
         {livePathName && <h1>{`Live Path: ${livePathName}`}</h1>}
-        <h1>{`Connected: ${isConnected}`}</h1>
+        <h1>{`Connected: ${livePathCurrentPoint !== null}`}</h1>
         <input
           type="text"
           onChange={e => setRobotIp(e.currentTarget.value)}

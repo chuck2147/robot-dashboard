@@ -27,6 +27,7 @@ type NTValue = NTPrimitive | NTPrimitive[]
 declare global {
   interface Window {
     receiveNTValue: (key: string, value: NTValue) => void
+    flushNT: () => void
   }
 }
 
@@ -39,18 +40,24 @@ const main = async () => {
   app.serveFolder(process.cwd())
 
   let lastAddress: string | undefined
-  let lastTimeValueReceived = new Date()
+  let wasConnectedLastCheck = false
 
+  const onDisconnect = () => {
+    console.log('Disconnected from', lastAddress)
+    app.evaluate(() => window.flushNT())
+  }
+
+  // auto-reconnect
   setInterval(() => {
-    // if a value has not been received in the last # seconds
-    if (
-      lastTimeValueReceived &&
-      new Date().getTime() - lastTimeValueReceived.getTime() > 4 * 1000 &&
-      lastAddress
-    ) {
+    const isConnected = nt.isConnected()
+    if (!isConnected) {
+      if (wasConnectedLastCheck) {
+        onDisconnect()
+      }
       connect()
     }
-  }, 500)
+    wasConnectedLastCheck = isConnected
+  }, 200)
 
   const sendValue = (key: string, value: NTValue) => {
     if (key.startsWith('/Usage')) return
@@ -62,12 +69,12 @@ const main = async () => {
   }
 
   const connect = (address = lastAddress) =>
-    new Promise<void>((resolve, reject) => {
-      console.log('attempting to connect to', address)
+    new Promise<void>(resolve => {
       killNT()
       nt.start((_, err) => {
-        if (err !== null) return reject(new Error(`could not connect: ${err}`))
         lastAddress = address
+        if (err !== null) return
+        console.log('Connected to', address)
         Object.values(nt.getEntries()).forEach(entry => {
           sendValue(entry.name, entry.val)
         })
@@ -80,7 +87,6 @@ const main = async () => {
     nt.Assign(value, key as string)
   })
   nt.addListener((key, val) => {
-    lastTimeValueReceived = new Date()
     sendValue(key, val)
   })
 
