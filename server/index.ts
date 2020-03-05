@@ -11,7 +11,7 @@ import { join } from 'path'
 const writeFileAsync = promisify(writeFile)
 const readFileAsync = promisify(readFile)
 
-const config = new Conf()
+const config = new Conf({ projectName: 'robot-dashboard' })
 
 const nt = new wpilibNtClient.Client()
 

@@ -6,12 +6,8 @@ import css from 'rollup-plugin-css-only'
 
 const extensions = ['.js', '.ts', '.tsx']
 
-export default {
-  input: {
-    'client/index': 'client/index.tsx',
-    'server/index': 'server/index.ts',
-  },
-  external: ['carlo', 'wpilib-nt-client', 'conf'],
+const opts = {
+  external: ['carlo', 'wpilib-nt-client', 'conf', 'util', 'fs', 'path'],
   plugins: [
     node({ extensions }),
     linaria({ sourceMap: false }),
@@ -22,9 +18,25 @@ export default {
     }),
     css({ output: 'dist/client/bundle.css' }),
   ],
-  output: {
-    dir: 'dist',
-    format: 'esm',
-    sourcemap: true,
-  },
 }
+
+export default [
+  {
+    ...opts,
+    input: { 'client/index': 'client/index.tsx' },
+    output: {
+      dir: 'dist',
+      format: 'esm',
+      sourcemap: true,
+    },
+  },
+  {
+    ...opts,
+    input: { 'server/index': 'server/index.ts' },
+    output: {
+      dir: 'dist',
+      format: 'cjs',
+      sourcemap: false,
+    },
+  },
+]
