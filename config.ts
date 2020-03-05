@@ -2,9 +2,9 @@ export const backgroundColor = '#111'
 export const bezierDivisions = 200
 
 /** ft/s^2 */
-export const maxAccel = 13
+export const maxAccel = 10
 /** ft/s^2 */
-export const maxDecel = 20
+export const maxDecel = 18
 /** ft/s */
 export const maxVelocity = 12
 

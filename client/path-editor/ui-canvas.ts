@@ -18,6 +18,7 @@ import {
   locateAnglePoint,
   findNearestPointOnPath,
   cubicBezierAngle,
+  drawBumpers,
 } from '../utils'
 
 const anglePointRadius = 15
@@ -133,6 +134,7 @@ export const initUiCanvas = (
   }
   const mouseUpListener = () => {
     activeElement = null
+    render()
   }
   const mouseMoveListener = (e: MouseEvent) => {
     if (!focusedElement || !activeElement) return
@@ -212,7 +214,7 @@ export const initUiCanvas = (
   const keyListener = (e: KeyboardEvent) => {
     const path = pathRef.current
     if (!path) return
-    if (e.key === 'Delete' && focusedElement) {
+    if (focusedElement && (e.key === 'Delete' || e.key === 'Backspace')) {
       if (isWaypoint(focusedElement)) {
         // Delete focused waypoint
         // Each anglepoint gets assigned a new location based on the nearest point on the new path
@@ -240,14 +242,14 @@ export const initUiCanvas = (
   canvas.addEventListener('mousedown', mouseDownListener)
   canvas.addEventListener('mouseup', mouseUpListener)
   canvas.addEventListener('dblclick', doubleClickListener)
-  window.addEventListener('keypress', keyListener)
+  window.addEventListener('keydown', keyListener)
 
   const destroy = () => {
     canvas.removeEventListener('mousemove', mouseMoveListener)
     canvas.removeEventListener('mousedown', mouseDownListener)
     canvas.removeEventListener('mouseup', mouseUpListener)
     canvas.removeEventListener('dblclick', doubleClickListener)
-    window.removeEventListener('keypress', keyListener)
+    window.removeEventListener('keydown', keyListener)
     clear()
   }
 
@@ -311,6 +313,19 @@ export const initUiCanvas = (
 
       circle(point, colorWithOpacity, 3)
     })
+
+    // Draw bumpers if you are dragging the first or last waypoint
+    if (activeElement === 'waypoint' && isWaypoint(focusedElement)) {
+      const waypointIndex = path.waypoints.indexOf(focusedElement)
+      const isFirstWaypoint = waypointIndex === 0
+      const isLastWaypoint = waypointIndex === path.waypoints.length - 1
+      if (isFirstWaypoint || isLastWaypoint) {
+        const anglePoint = isFirstWaypoint
+          ? path.angles[0]
+          : path.angles[path.angles.length - 1]
+        drawBumpers(ctx, focusedElement, anglePoint.angle)
+      }
+    }
   }
 
   const setDisplayMode = (newDisplayMode: DisplayMode) => {

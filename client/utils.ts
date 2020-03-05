@@ -247,6 +247,7 @@ export const findNearestPointOnPath = (location: Point, path: Path) => {
   return result
 }
 
+/** Returns the x and y coordinates of an AnglePoint on a Path */
 export const locateAnglePoint = (anglePoint: AnglePoint, path: Path) => {
   const segmentStartPoint = path.waypoints[anglePoint.afterWaypoint]
   const segmentEndPoint = path.waypoints[anglePoint.afterWaypoint + 1]

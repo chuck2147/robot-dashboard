@@ -54,6 +54,8 @@ export interface AnglePoint {
 export interface Path {
   waypoints: Waypoint[]
   angles: AnglePoint[]
+  /** Maximum velocity along this Path, in ft/s */
+  maxVelocity?: number
 }
 
 export interface Vector2 {

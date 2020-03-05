@@ -15,11 +15,10 @@ import {
   clamp,
   distanceBetween,
   lerp,
-  sqrtKeepSign,
 } from '../utils'
 import {
   bezierDivisions,
-  maxVelocity as originalMaxVelocity,
+  maxVelocity as globalMaxVelocity,
   maxAccel as originalMaxAccel,
   maxDecel as originalMaxDecel,
   curvatureVelocity,
@@ -33,8 +32,6 @@ enum SmoothDirection {
   REVERSE,
 }
 
-/** in/s */
-const maxVelocity = originalMaxVelocity * 12
 /** in/s */
 const maxAccel = originalMaxAccel * 12
 /** in/s */
@@ -103,6 +100,7 @@ export const computeTrajectory = (path: Path): Trajectory => {
     }
   })
 
+  const maxVelocity = (path.maxVelocity || globalMaxVelocity) * 12
   const clampVelocity = clamp(-maxVelocity, maxVelocity)
 
   const trajectory = interpolatedPath.map(point => {

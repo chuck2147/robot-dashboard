@@ -335,6 +335,7 @@ export const PathEditor = () => {
         />
       </div>
       <div class={rightPanelStyle}>
+        <button onClick={() => window.location.reload()}>Reload</button>
         {pathDuration && <h1>{`${pathDuration.toPrecision(4)}s`}</h1>}
         {livePathName && <h1>{`Live Path: ${livePathName}`}</h1>}
         <h1>{`Connected: ${isConnected}`}</h1>
