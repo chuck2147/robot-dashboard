@@ -327,6 +327,8 @@ export const PathEditor = () => {
   const hide = { display: 'none' }
   const hideIfLive = livePathName ? hide : undefined
 
+  const isConnected = livePathCurrentPoint !== null
+
   return (
     <div class={pathEditorStyle}>
       <div class={fieldStyle}>
@@ -350,7 +352,10 @@ export const PathEditor = () => {
         <button onClick={() => window.location.reload()}>Reload</button>
         {pathDuration && <h1>{`${pathDuration.toPrecision(4)}s`}</h1>}
         {livePathName && <h1>{`Live Path: ${livePathName}`}</h1>}
-        <h1>{`Connected: ${livePathCurrentPoint !== null}`}</h1>
+        <h1>{`Connected: ${isConnected}`}</h1>
+        {!isConnected && (
+          <button onClick={() => connect(robotIp)}>Connect to robot</button>
+        )}
         <input
           type="text"
           onChange={e => setRobotIp(e.currentTarget.value)}

@@ -54,7 +54,7 @@ const main = async () => {
       if (wasConnectedLastCheck) {
         onDisconnect()
       }
-      connect()
+      // connect()
     }
     wasConnectedLastCheck = isConnected
   }, 200)
@@ -73,6 +73,10 @@ const main = async () => {
       killNT()
       nt.start((_, err) => {
         lastAddress = address
+        if (err) {
+          console.log('error connecting', err)
+          nt.destroy()
+        }
         if (err !== null) return
         console.log('Connected to', address)
         Object.values(nt.getEntries()).forEach(entry => {
