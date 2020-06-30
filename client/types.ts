@@ -63,7 +63,7 @@ export interface Vector2 {
   x: number
 }
 
-export enum DisplayMode {
+export const enum DisplayMode {
   Waypoints,
   AnglePoints,
 }

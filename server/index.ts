@@ -1,12 +1,15 @@
 /* eslint-disable caleb/unicorn/no-process-exit */
 /* eslint-disable no-process-exit */
 
-import carlo from 'carlo'
+import * as puppeteer from 'puppeteer'
 import wpilibNtClient from 'wpilib-nt-client'
 import Conf from 'conf'
 import { promisify } from 'util'
 import { writeFile, readFile } from 'fs'
-import { join } from 'path'
+import * as path from 'path'
+import getPort from 'get-port'
+import sirv from 'sirv'
+import polka from 'polka'
 
 const writeFileAsync = promisify(writeFile)
 const readFileAsync = promisify(readFile)
@@ -32,19 +35,34 @@ declare global {
 }
 
 const main = async () => {
-  const app = await carlo.launch()
-  app.on('exit', () => {
+  const blankPage = encodeURIComponent(`<html style="background: black">`)
+  const browser = await puppeteer.launch({
+    headless: false,
+    defaultViewport: null,
+    args: [`--app=data:text/html,${blankPage}`],
+  })
+
+  const port = await getPort({ port: 3000 })
+  const fileServer = sirv(process.cwd())
+  const server = polka()
+    .use(fileServer)
+    .listen(port, (err: Error) => {
+      console.error('error thrown from internal http server:', err)
+    })
+
+  const page = (await browser.pages())[0]
+
+  page.on('close', () => {
     killNT()
     process.exit()
   })
-  app.serveFolder(process.cwd())
 
   let lastAddress: string | undefined
   let wasConnectedLastCheck = false
 
   const onDisconnect = () => {
     console.log('Disconnected from', lastAddress)
-    app.evaluate(() => window.flushNT())
+    page.evaluate(() => window.flushNT())
   }
 
   // auto-reconnect
@@ -61,7 +79,7 @@ const main = async () => {
 
   const sendValue = (key: string, value: NTValue) => {
     if (key.startsWith('/Usage')) return
-    app.evaluate(
+    page.evaluate(
       (key, value) => window.receiveNTValue(key, value),
       key,
       value as any,
@@ -86,35 +104,40 @@ const main = async () => {
       }, address)
     })
 
-  await app.exposeFunction('connect', (address?: string) => connect(address))
-  await app.exposeFunction('sendNTValue', (key, value) => {
+  await page.exposeFunction('connect', (address?: string) => connect(address))
+  await page.exposeFunction('sendNTValue', (key, value) => {
     nt.Assign(value, key as string)
   })
   nt.addListener((key, val) => {
     sendValue(key, val)
   })
 
-  await app.exposeFunction(
+  await page.exposeFunction(
     'saveConfValue',
     (key: string, value: string | number | boolean) => {
       config.set(key, value)
     },
   )
-  await app.exposeFunction('readConfValue', (key: string) => config.get(key))
-  await app.exposeFunction(
+  await page.exposeFunction('readConfValue', (key: string) => config.get(key))
+  await page.exposeFunction(
     'savePaths',
     (folderPath: string, trajectories: string, paths: string) => {
       Promise.all([
-        writeFileAsync(join(folderPath, 'paths.json'), paths),
-        writeFileAsync(join(folderPath, 'trajectories.json'), trajectories),
+        writeFileAsync(path.join(folderPath, 'paths.json'), paths),
+        writeFileAsync(
+          path.join(folderPath, 'trajectories.json'),
+          trajectories,
+        ),
       ])
     },
   )
-  await app.exposeFunction('readPaths', (folderPath: string) =>
-    readFileAsync(join(folderPath, 'paths.json'), 'utf8').catch(() => '{}'),
+  await page.exposeFunction('readPaths', (folderPath: string) =>
+    readFileAsync(path.join(folderPath, 'paths.json'), 'utf8').catch(
+      () => '{}',
+    ),
   )
 
-  await app.load('index.html')
+  await page.goto(`http://localhost:${port}`)
   await connect('localhost')
 }
 

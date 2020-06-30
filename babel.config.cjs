@@ -3,6 +3,7 @@ module.exports = api => {
 
   return {
     plugins: [
+      ['babel-plugin-const-enum', { transform: 'constObject' }],
       ['@babel/plugin-transform-react-jsx', { pragma: 'h' }],
       ['@babel/plugin-proposal-optional-chaining', { loose: true }],
     ],

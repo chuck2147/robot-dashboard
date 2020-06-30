@@ -9,7 +9,7 @@ export const SendableChooser = ({ ntKey }: Props) => {
   const [selected, setSelected] = useNTValue<string>(`${ntKey}/selected`)
   const [defaultValue] = useNTValue<string>(`${ntKey}/default`)
 
-  return (
+  return options?.length ? (
     // eslint-disable-next-line caleb/jsx-a11y/no-onchange
     <select
       onChange={e => setSelected(e.currentTarget.value)}
@@ -23,5 +23,7 @@ export const SendableChooser = ({ ntKey }: Props) => {
         </option>
       ))}
     </select>
+  ) : (
+    <span>No Options</span>
   )
 }

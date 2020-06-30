@@ -27,7 +27,7 @@ import {
 } from '../../config'
 import { motionProfile } from './motion-profile'
 
-enum SmoothDirection {
+const enum SmoothDirection {
   FORWARDS,
   REVERSE,
 }

@@ -19,9 +19,12 @@
     "type:watch": "tsc -b -w"
   },
   "dependencies": {
-    "carlo": "0.9.46",
     "conf": "^6.2.0",
+    "get-port": "^5.1.1",
+    "polka": "^0.5.2",
     "preact": "^10.1.1",
+    "puppeteer": "^4.0.1",
+    "sirv": "^1.0.1",
     "wpilib-nt-client": "^1.7.1"
   },
   "devDependencies": {
@@ -32,10 +35,13 @@
     "@babel/preset-typescript": "^7.7.4",
     "@rollup/plugin-node-resolve": "^6.0.0",
     "@rollup/plugin-url": "^4.0.0",
-    "@types/carlo": "0.9.1",
     "@types/jest": "^24.0.24",
     "@types/node": "^13.7.1",
+    "@types/polka": "^0.5.1",
+    "@types/puppeteer": "^3.0.1",
+    "@types/puppeteer-core": "^2.0.0",
     "babel-jest": "^24.9.0",
+    "babel-plugin-const-enum": "^1.0.1",
     "eslint": "6.7.2",
     "eslint-formatter-pretty": "^3.0.1",
     "eslint-plugin-caleb": "7.1.1",

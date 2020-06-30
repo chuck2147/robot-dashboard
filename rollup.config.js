@@ -7,7 +7,17 @@ import css from 'rollup-plugin-css-only'
 const extensions = ['.js', '.ts', '.tsx']
 
 const opts = {
-  external: ['carlo', 'wpilib-nt-client', 'conf', 'util', 'fs', 'path'],
+  external: [
+    'puppeteer',
+    'get-port',
+    'polka',
+    'sirv',
+    'wpilib-nt-client',
+    'conf',
+    'util',
+    'fs',
+    'path',
+  ],
   plugins: [
     node({ extensions }),
     linaria({ sourceMap: false }),

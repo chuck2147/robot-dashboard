@@ -440,7 +440,10 @@ export const PathEditor = () => {
             )}
           </Fragment>
         )}
-        <SendableChooser ntKey="/SmartDashboard/Auto Selector" />
+        <label>
+          <span>Auto Selector</span>
+          <SendableChooser ntKey="/SmartDashboard/Auto Selector" />
+        </label>
       </div>
     </div>
   )
