@@ -43,7 +43,7 @@ const main = async () => {
   })
 
   const port = await getPort({ port: 3000 })
-  const fileServer = sirv(process.cwd())
+  const fileServer = sirv(process.cwd(), { dev: true })
   const server = polka()
     .use(fileServer)
     .listen(port, (err: Error) => {
