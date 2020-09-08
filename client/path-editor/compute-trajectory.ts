@@ -103,7 +103,8 @@ export const computeTrajectory = (path: Path): Trajectory => {
   const maxVelocity = (path.maxVelocity || globalMaxVelocity) * 12
   const clampVelocity = clamp(-maxVelocity, maxVelocity)
 
-  const trajectory = interpolatedPath.map(point => {
+  let trajectory = interpolatedPath.map(point => {
+    /* const netVelocity = maxVelocity */
     const netVelocity = clampVelocity(curvatureVelocity / point.curvature)
     const velocity: Vector2 = {
       x: netVelocity * Math.cos(point.heading),
@@ -112,15 +113,13 @@ export const computeTrajectory = (path: Path): Trajectory => {
     return { ...point, velocity }
   })
 
-  const smoothed = smoothTrajectory(
-    smoothTrajectory(trajectory, SmoothDirection.FORWARDS),
-    SmoothDirection.REVERSE,
-  )
+  trajectory = smoothTrajectory(trajectory, SmoothDirection.FORWARDS)
+  trajectory = smoothTrajectory(trajectory, SmoothDirection.REVERSE)
 
   let prevTime = 0
   let prevPoint: TrajectoryPointWithoutTime | null = null
 
-  const trajectoryWithTime = smoothed.map(point => {
+  const trajectoryWithTime = trajectory.map(point => {
     if (!prevPoint) {
       prevPoint = point
       return { ...point, time: 0 }

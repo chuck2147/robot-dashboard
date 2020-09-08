@@ -46,6 +46,7 @@ export const initPathCanvas = (canvas: HTMLCanvasElement) => {
       if (!prevPoint) return
       const velocity = Math.sqrt(point.velocity.x ** 2 + point.velocity.y ** 2)
       const color = lerpColor('#e53935', '#689f38', velocity / maxVelocity)
+      /* const color = 'blue' */
       line(prevPoint, point, color, 1.2)
       drawBumpers(ctx, point, point.angle, transparent(color))
     })
